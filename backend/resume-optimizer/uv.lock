@@ -739,6 +739,7 @@ dependencies = [
     { name = "google-genai" },
     { name = "pymupdf" },
     { name = "python-docx" },
+    { name = "python-multipart" },
 ]
 
 [package.metadata]
@@ -747,6 +748,7 @@ requires-dist = [
     { name = "google-genai", specifier = ">=1.66.0" },
     { name = "pymupdf", specifier = ">=1.27.2" },
     { name = "python-docx", specifier = ">=1.2.0" },
+    { name = "python-multipart", specifier = ">=0.0.22" },
 ]
 
 [[package]]
