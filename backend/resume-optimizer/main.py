@@ -38,3 +38,8 @@ async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form
         extract_text = ProcessDocument(contents).process_docx_file()
     
     return {"filename":resume.file}
+
+
+@app.post("/chat/agent/")
+async def chat_agent(resume):
+    return {"documents":""}
