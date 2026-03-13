@@ -35,8 +35,11 @@ This structured data is then used to analyze the resume and optimize it to bette
 ## Future Improvements
 - base on user requirements
 
-## System Architectures
+## System Architectures Phase 1
 ![Architecture Diagram](backend\resume-optimizer\flowChart\ResumeFlow.drawio.svg)
+
+## System Architectures chat with resume Phase 2
+![Architecture Diagram](backend\resume-optimizer\flowChart\FlowChartPhase2.drawio.svg)
 
 
 ## Frontend UI
