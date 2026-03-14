@@ -1,8 +1,21 @@
-
+@import "tailwindcss";
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #e5e7eb;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: gray;
+  border-radius: 6px;
 }
 
 
