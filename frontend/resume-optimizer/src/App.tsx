@@ -8,15 +8,13 @@ import {AtsScore,SkillsAnalysis
 import { CoverLetter,ResumeContainer } from "./components/ResumeContainer";
 import ResumeVersion from "./components/ResumeVersion";
 import {  Recorder } from "./components/Recorder/Recorder";
-import { SettingsModals } from "./components/modals";
+
 
 
 
 export default function App() {
   const [resume, setResume] = useState(sampleResume);
-  const [coverLetterText, setCoverLetterText] = useState(
-    "# Cover Letter\nYour generated cover letter appears here..."
-  );
+  const [coverLetterText, setCoverLetterText] = useState('');
   
   const [skillsAnalysis,SetskillsAnalysis] = useState(
     {present:["Python", "FastAPI", "SQL"],missing:["Docker", "AWS", "Kubernetes"]})
@@ -32,6 +30,7 @@ export default function App() {
   const [resumeFile,SetResumeFile] = useState<File | null>()
 
   const resumeFileRef = useRef<HTMLInputElement | null>(null)
+  const [openTemplate,setOpenTemplate] = useState(false)
 
   const handleFileClick = () => {
   
@@ -47,8 +46,15 @@ export default function App() {
   };
 
   return (
-    <section className="h-auto w-full bg-gray-100">
+    <section className="h-auto w-full bg-gray-100 relative'
+    ">
       <HeaderSection />
+
+      {/* Resume template */}
+
+      
+
+      {/* Resume Template */}
   
 
       <div className="flex gap-4 p-4 flex-col md:flex-row">

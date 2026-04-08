@@ -1,5 +1,8 @@
 import React from 'react'
 import ReactMarkdown from 'react-markdown'
+import TemplateContainer from './Template/Container'
+import { useState } from 'react'
+
 type ResumeContainerProps = {
     resumeBefore?:string
     resumeAfter?:string
@@ -10,11 +13,18 @@ type CoverLetterProps = {
 }
 
 export const ResumeContainer:React.FC<ResumeContainerProps> = ({resumeBefore,resumeAfter}) => {
+
+  const [openTemplate,setOpenTemplate] = useState(false)
+
   return (
+    <>
+    <TemplateContainer isOpen={openTemplate}/>
           <div className="flex-1 bg-white rounded-lg border border-gray-50 shadow-xl flex flex-col overflow-hidden relative">
              {/* EDITOR + PREVIEW */}
             <div className="flex justify-end gap-2 p-1 border-b bg-gray-50">
-              <button className="text-xs px-3 py-2 border rounded hover:bg-gray-400 bg-gray-500 text-white"
+              <button  onClick={()=>setOpenTemplate(prev => !prev)}
+              className="text-xs px-3 py-2 border rounded
+               hover:bg-gray-400 bg-gray-500 text-white"
               >
                 Download Resume
               </button>
@@ -36,6 +46,7 @@ export const ResumeContainer:React.FC<ResumeContainerProps> = ({resumeBefore,res
               </div>
             </div>
           </div>
+          </>
   )
 }
 
