@@ -43,3 +43,13 @@ This structured data is then used to analyze the resume and optimize it to bette
 
 
 ## Frontend UI
+
+## To run project locally 
+- set  gemini API_KEY
+- set model both for chat and voice 
+# start backend server
+- cd into backend/resume-optimizer
+- fastapi dev
+# start frontend server
+- cd into frontend/resume-optimizer
+- npm run dev
