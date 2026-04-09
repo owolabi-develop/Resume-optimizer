@@ -23,6 +23,7 @@ This structured data is then used to analyze the resume and optimize it to bette
 
 ## Tech Stack
 - Python
+- uv package manager
 - FastApi
 - Gemini(LLM)
 - React
@@ -44,9 +45,13 @@ This structured data is then used to analyze the resume and optimize it to bette
 
 ## Frontend UI
 
-## To run project locally 
-- set  gemini API_KEY
-- set model both for chat and voice 
+## To run project locally
+- run uv venv
+- activate your environment
+- uv sync to update environment
+- create .env
+- set  gemini GEMINI_API_KEY
+- set model both for chat and voice (CHAT_MODEL, VOICE_MODEL) either  parse in from the frontend ui
 # start backend server
 - cd into backend/resume-optimizer
 - fastapi dev
