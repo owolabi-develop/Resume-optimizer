@@ -12,7 +12,7 @@ class ProcessDocument:
         for page in doc:
             text = page.get_text()
             fullText += text
-        return fullText.replace(" ","")
+        return fullText.split("\n")
         
 
 
@@ -26,7 +26,7 @@ class ProcessDocument:
 
          for para in doc.paragraphs:
             print(para)
-            fullText.append(para.text.replace(" ",""))
+            fullText.append(para.text)
          return '\n'.join(fullText) 
 
          
