@@ -52,6 +52,8 @@ async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form
         resume_coverletter_refinement = await agent.agent_refinement(extracted_section,job_description)
         optimize_resume_coverLetter = await agent.agent_reflection(resume_coverletter_refinement.resume,job_description,
                                                                    resume_coverletter_refinement.coverletter)
+        optimize_coverletter =  optimize_resume_coverLetter['coverletter']
+        optimize_resume = optimize_resume_coverLetter['resume']
         pprint(optimize_resume_coverLetter,indent=4)
     else:
         return {"status":"Error"}

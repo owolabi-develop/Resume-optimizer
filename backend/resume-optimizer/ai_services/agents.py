@@ -293,7 +293,8 @@ class Agents:
                 model=self.model,
                 contents=prompt,
                 config={"response_mime_type": "application/json",
-                     "response_json_schema": OptimizeResumeEvaluation})
+                     "response_schema": OptimizeResumeEvaluation}
+                     )
             evaluation_result = response_critique.parsed
             if evaluation_result.evaluation == EvaluationStatus.PASS:
                 optimize_resume_coverletter = {
