@@ -3,11 +3,14 @@ from typing import Dict
 import os
 import json
 from google import genai
+from google.genai import errors
 import enum
 from dotenv import load_dotenv
 
 
-from .structure_output import ValidationStatus,ResumeData
+
+from .structure_output import (ValidationStatus,
+ResumeData,OptimizeResumeCoverletter,OptimizeResumeEvaluation,EvaluationStatus)
 
 
 
@@ -121,9 +124,6 @@ class Agents:
                    - startDate and endDate
                 4. for the candidate education extract the university or college name include their gpa if available
                 5. extract the candidate certifications details
-                6. job_keywords
-                   - extract all relevant tools and specific keyword from the job description
-
                 Note:
                     There will be some resume sample where you will find core competence section, is the same as skill
             
@@ -132,21 +132,22 @@ class Agents:
                 <output_format>
                  strictly return a json schema representation of the sections extracted
                 </output_format>
-               
-                
                """
+        
         response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config={
-        "response_mime_type": "application/json",
-        "response_json_schema": ResumeData.model_json_schema()},
-        )
+                model=self.model,
+                contents=prompt,
+                config={
+            "response_mime_type": "application/json",
+            "response_json_schema": ResumeData.model_json_schema()},
+            )
         result = ResumeData.model_validate_json(response.text).model_dump()
         return result
 
     async def agent_refinement(self, extracted_resume_sections: Dict, 
                             job_description: str) -> Dict:
+        
+        
         """
         Improves resume content based on job description.
 
@@ -164,7 +165,7 @@ class Agents:
     
                  <role> 
                  you are a strict resume and cover optimization assistant limited the 
-                 extracted resume sections provide below on the context section.  
+                 extracted resume sections provide below on the context section. 
                  </role>
 
                  <context>
@@ -179,8 +180,8 @@ class Agents:
                 Resume Refinement:
                     1.  Align the candidate title to the exact job description title requirement.
                     2. Craft a Compelling Objective and professional summary Statement  
-                    - Based on the the job description, create an objective and professional summary statement that clearly 
-                    communicates the candidate goals and alignment with the (JOB TITLE) role at (COMPANY).
+                    - Based on the the job description, create an objective and professional summary statement that clearly
+                    communicates the candidate goals and alignment with the (JOB TITLE) role at the (COMPANY).
 
                     3. include job-specific keywords from the job description to ensure the resume matches the job requirements.
 
@@ -194,10 +195,12 @@ class Agents:
                    
                     7. carefully refine the candidate most recent and relevant roles working experience, and cutout any ambiguous
                       key achievement, task carried out not relating to their responsibilities that doesn't add any value. then 
-                      highlight each position with bullet points that features the keywords and skill identify on the job description not keyword stuffing, 
-                      then for each role craft a bullet point that tells a story of impact and result driven.
+                       
+                    8. highlight and refine each role working experience with bullet points that features the keywords and skill identify on the job description not keyword stuffing,
 
-                    10. strictly avoid adding any fake or random 
+                    9. then for each role craft a bullet point that tells a story of impact and result driven.
+
+                    10. strictly avoid adding any details to the optimize resume not included on the job description
 
                     11 . Fixed formatting:
                         - use 11 - 12 font size
@@ -207,16 +210,25 @@ class Agents:
                         - return concise, one page, clean layout, ATS-friendly format.
                         -  Avoid table and text boxes, no design errors.
                         - keep margins clean
-
-                    -  Generate optimize resume and coverletter
+                    -  Generate professional optimize resume and coverletter
                  
-                 </instructions>
+                 </instructions> 
 
                  <output_format>
                  strictly return markdown format for both resume and coverletter
                 </output_format>
 
                  """
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt,
+            config={
+        "response_mime_type": "application/json",
+        "response_json_schema": OptimizeResumeCoverletter.model_json_schema()},
+        )
+        resume_coverletter = OptimizeResumeCoverletter.model_validate_json(response.text)
+        return resume_coverletter
+        
 
 
     async def agent_scoring(self, sections: Dict, job_description: str) -> Dict:
@@ -231,6 +243,8 @@ class Agents:
         """
 
     async def agent_reflection(self, optimize_resume: str,job_description: str, coverletter: str):
+        print("critiquing the initial output against the requirements or desired quality")
+
         """
         Evaluates:
 
@@ -238,7 +252,73 @@ class Agents:
         refine its response iteratively
 
         """
-        pass
+        prompt = f"""
+
+       <role>
+       You are resume and coverletter Critique assistant
+       </role>
+
+       <Context>
+       optimize_resume: {optimize_resume}
+       job_description: {job_description}
+       coverletter: {coverletter}
+       </Context>
+
+       <instructions>
+        Critique the following optimize_resume and coverletter base on the job description. 
+        1. check the optimize resume if the candidate title is align with the exact job description title requirement
+        2. check the optimize resume if it's include job-specific keywords from the job description 
+        3. check if the optimize resume include Standard clear Headings like "Work Experience Or Experience," 
+        "Education," "Skills or Technical Skills" "Professional Summary or Summary", "Projects". 
+        4. check each role and working experience of the optimize resume if it's include bullet points 
+           that features the keywords and skill identify on the job description not keyword stuffing
+        5. check the professional summary and objective statement if it's clearly communicates the 
+        candidate goals and alignment with the (JOB TITLE) role at the (COMPANY). Base on the job description
+       
+       </instructions>
+
+        <output_format>
+        Respond with PASS or FAIL and provide feedback.
+        </output_format>
+       """ 
+      #Reflection Loop
+        max_iterations = 3
+        current_iteration = 0
+        optimize_resume_coverletter = ''
+
+        while current_iteration < max_iterations:
+            current_iteration +=1
+
+            response_critique = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config={"response_mime_type": "application/json",
+                     "response_json_schema": OptimizeResumeEvaluation})
+            evaluation_result = response_critique.parsed
+            if evaluation_result.evaluation == EvaluationStatus.PASS:
+                optimize_resume_coverletter = {
+                    "resume":optimize_resume,
+                    "coverletter":coverletter
+                }
+                break
+            else:
+                result  = await self.agent_refinement(optimize_resume,job_description)
+                optimize_resume_coverletter = {
+                    "resume":result.resume,
+                    "coverletter":result.coverletter
+                }
+                if current_iteration == max_iterations: 
+                  
+                  optimize_resume_coverletter = {
+                    "resume":optimize_resume,
+                    "coverletter":coverletter
+                }
+                break
+        return optimize_resume_coverletter
+            
+            
+
+    
 
 
     async def agent_update_resume_or_coverletter(self):

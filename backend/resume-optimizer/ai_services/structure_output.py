@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field,HttpUrl
 from typing import List, Optional
 from datetime import date
-
+import enum
 
 
 class ValidationStatus(BaseModel):
@@ -46,7 +46,6 @@ class ResumeData(BaseModel):
     experience: Optional[List[Experience]] = Field(description="List of professional experience")
     education: Optional[List[Education]] = Field(description="List of educational background")
     certifications: Optional[List[Certifications]] = Field(description="List of certifications obtain")
-    job_keywords: List[str] = Field(description="List of the job keywords")
 
 
 class OptimizeResumeCoverletter(BaseModel):
@@ -61,3 +60,14 @@ class ATSScore(BaseModel):
     experience: int  = Field(description="The candidate experience percentage match the job description")
     format:int  = Field(description="Ats resume format return percentage ")
     impact: int  = Field(description="the impact of the resume")
+
+
+
+class EvaluationStatus(enum.Enum):
+    PASS = "PASS"
+    FAIL = "FAIL"
+
+class OptimizeResumeEvaluation(BaseModel):
+    evaluation: EvaluationStatus
+    feedback: str
+    reasoning: str
