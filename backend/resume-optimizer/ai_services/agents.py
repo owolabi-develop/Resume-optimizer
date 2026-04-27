@@ -6,21 +6,14 @@ from google import genai
 from google.genai import errors
 import enum
 from dotenv import load_dotenv
-
-
-
 from .structure_output import (ValidationStatus,OptimizeResumeCoverletter,OptimizeResumeEvaluation,
                                EvaluationStatus,ATSScore,RoutingDecision,Category)
-
-
-
 load_dotenv()
 
+
+
+
 # Workflow: Prompt Chaining
-
-
-
-
 class Agents:
     
     def __init__(self,api_key: str, model: str, voice_model: str | None):
@@ -382,6 +375,28 @@ class Agents:
         if response_router.parse.Category == Category.RESUME:
 
             prompt_resume = f"""
+                 <role>
+               your are a professional resume update assistant. you will be provided an already optimized resume 
+               </role>
+               <context>
+               OPTIMIZED RESUME:
+                {optimize_resume}
+    
+                Query:
+                {user_query}
+               </context>
+
+                <instructions>
+                RULE:
+                 - update the candidate resume base on their request
+                 - avoid making any changes on the resume which are not requested my the candidate
+                 - keep the resume professional as is, aside from the candidate update request 
+                 
+                </instructions>
+
+                <output_format>
+                return a markdown format of the update resume
+                </output_format>
                 """
             resume_response =  self.client.models.generate_content(
                 model=self.model,
@@ -392,16 +407,26 @@ class Agents:
              
             prompt_coverletter = f"""
                <role>
-               your are a 
+               your are a professional coverletter refiner and update assistant.
                </role>
                <context>
                 COVERLETTER:
                 {coverletter}
+
                 JOB DESCRIPTION:
                 {job_description}
+
+                Query:{user_query}
                </context>
 
                 <instructions>
+                1. update the candidate coverletter base on the user request
+
+                COVER LETTER REGENERATION:
+                    - Write a concise and tailored cover letter
+                    - Clearly connect candidate experience to job requirements
+                    - Show alignment with company goals
+                    - Keep it professional and direct
                 </instructions>
 
                 <output_format>

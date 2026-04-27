@@ -69,7 +69,7 @@ async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form
     
 
 
-@app.post("/chat/agent/")
+@app.post("/chat/agent/{optimize_resume}/{coverletter}/{job_description}/{user_query}")
 async def chat_agent(optimize_resume: str, coverletter: str,
                         job_description: str, user_query:str ):
      
