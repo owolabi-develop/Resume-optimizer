@@ -2,7 +2,7 @@
 
 
 
-async def tool_update_coverletter(coverletter:str) -> str:
+async def tool_update_coverletter(coverletter:str,job_description:str) -> str:
     pass
 
 

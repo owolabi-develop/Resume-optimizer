@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 
 
 
-from .structure_output import (ValidationStatus,
-ResumeData,OptimizeResumeCoverletter,OptimizeResumeEvaluation,EvaluationStatus)
+from .structure_output import (ValidationStatus,OptimizeResumeCoverletter,OptimizeResumeEvaluation,
+                               EvaluationStatus,ATSScore,RoutingDecision,Category)
 
 
 
@@ -75,147 +75,59 @@ class Agents:
         return result.status
 
 
-    async def agent_sections_extractor(self, resume: str) -> Dict:
-        """
-        Extracts structured sections from resume.
-        Returns: {
-            "summary": str,
-            "skills": List[str],
-            "experience": List[{
-                "title": str,
-                "company": str,
-                "description": str
-            }],
-            "education": List[str],
-            "projects": List[str]
-        }
-        """
-
-
-        prompt = f"""
-               <context>
-                Resume :{resume}
-               </context>
-               
-                 <role>
-                  You are a strict grounded resume extraction sections parsing assistant
-                  limited to the resume provided above.
-                 </role>
-
-                 <instructions>
-                 read through the whole resume document to extract relevant sections
-                 1. Extract the candidate details such as
-                  - title,
-                  - firstName, 
-                  - lastName, 
-                  - emailAddress.
-                  - phoneNumber
-                  - professional summary
-                  - career objective
-
-                 2. for the candidate skill, extract both technical and soft skill given that technical skill will always be available
-                 3. for the candidate experience, extract the 
-                   - company name
-                   - role position held at the company example (Senior,Junior,lead,Principle etc.)
-                   - project descriptions
-                   - tech stacks
-                   - employment type full-time, part-time,contract
-                   - location such as city/state of the company, remote,onsite,hybrid
-                   - startDate and endDate
-                4. for the candidate education extract the university or college name include their gpa if available
-                5. extract the candidate certifications details
-                Note:
-                    There will be some resume sample where you will find core competence section, is the same as skill
-            
-                  </instructions>
-
-                <output_format>
-                 strictly return a json schema representation of the sections extracted
-                </output_format>
-               """
-        
-        response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config={
-            "response_mime_type": "application/json",
-            "response_json_schema": ResumeData.model_json_schema()},
-            )
-        result = ResumeData.model_validate_json(response.text).model_dump()
-        return result
+    
 
     async def agent_refinement(self, extracted_resume_sections: Dict, 
                             job_description: str) -> Dict:
         
-        
-        """
-        Improves resume content based on job description.
-
-        Responsibilities:
-        - Align experience with JD
-        - Enhance bullet points (impact, clarity)
-        - Inject missing keywords (without hallucination)
-        - Improve structure and phrasing
-        -  Generate optimize resume and coverletter
-
-        Returns:
-        - optimized resume and coverletter
-        """
         prompt = f"""
     
                  <role> 
-                 you are a strict resume and cover optimization assistant limited the 
-                 extracted resume sections provide below on the context section. 
+                You are an expert ATS resume and cover letter optimization assistant.
+                Your goal is to improve the resume strictly based on the candidate’s actual experience.
                  </role>
 
                  <context>
-                  extracted resume sections :{extracted_resume_sections}
-                  job description: {job_description}
+                  RESUME DATA:
+                  {extracted_resume_sections}
+
+                  JOB DESCRIPTION: 
+                  {job_description}
                  </context>
 
                  <instructions>
                   Responsibilities:
                   use the extracted resume sections and job description to generate an optimize resume and coverletter.
 
-                Resume Refinement:
-                    1.  Align the candidate title to the exact job description title requirement.
-                    2. Craft a Compelling Objective and professional summary Statement  
-                    - Based on the the job description, create an objective and professional summary statement that clearly
-                    communicates the candidate goals and alignment with the (JOB TITLE) role at the (COMPANY).
-
+                    RESUME OPTIMIZATION:
+                    1. Align the candidate’s title with the job title where appropriate
+                    2. Based on the the job description rewrite the objective and professional summary to clearly match the role
                     3. include job-specific keywords from the job description to ensure the resume matches the job requirements.
-
-                    4. Use Standard clear Headings: 
-                    - Stick to common headings like "Work Experience Or Experience," "Education," "Skills or Technical Skills"
-                    "Professional Summary or Summary", "Projects".
-
-                    5. Ensure there’s a clear hierarchy! 
-
-                    6.  Turn the candidate responsibilities into measurable achievement
-                   
+                    4. Ensure ATS-friendly Standard clear Headings: 
+                    - Experience
+                    - Education
+                    - Skills"
+                    - Professional Summary
+                    - Projects (if available)
+                    5. Avoid keyword stuffing. 
+                    6. Turn the candidate responsibilities into measurable achievement
                     7. carefully refine the candidate most recent and relevant roles working experience, and cutout any ambiguous
-                      key achievement, task carried out not relating to their responsibilities that doesn't add any value. then 
-                       
-                    8. highlight and refine each role working experience with bullet points that features the keywords and skill identify on the job description not keyword stuffing,
+                    key achievement, task carried out not relating to their responsibilities that doesn't add any value. then 
+                    8. Strictly rewrite each role working experience of the candidate with bullet points that features the keywords and skill found on the job description.
+                    9. For each role craft a bullet point that tells a story of impact and result driven.
+                    10. Strictly avoid adding any details to the optimize resume not included on the job description
 
-                    9. then for each role craft a bullet point that tells a story of impact and result driven.
+                    COVER LETTER GENERATION:
 
-                    10. strictly avoid adding any details to the optimize resume not included on the job description
-
-                    11 . Fixed formatting:
-                        - use 11 - 12 font size
-                        - use professional fonts (Calibri)
-                        - use a standard text alignment
-                        - return a clean single column structure.
-                        - return concise, one page, clean layout, ATS-friendly format.
-                        -  Avoid table and text boxes, no design errors.
-                        - keep margins clean
-                    -  Generate professional optimize resume and coverletter
+                    - Write a concise and tailored cover letter
+                    - Clearly connect candidate experience to job requirements
+                    - Show alignment with company goals
+                    - Keep it professional and direct
                  
                  </instructions> 
 
                  <output_format>
-                 strictly return markdown format for both resume and coverletter
+                return  a markdown format for both optimized resume and the coverletter 
                 </output_format>
 
                  """
@@ -229,18 +141,6 @@ class Agents:
         resume_coverletter = OptimizeResumeCoverletter.model_validate_json(response.text)
         return resume_coverletter
         
-
-
-    async def agent_scoring(self, sections: Dict, job_description: str) -> Dict:
-        """
-        Computes ATS scores
-        - job matching score
-        - Keyword
-        - skills
-        - experience
-        - format
-        - impact
-        """
 
     async def agent_reflection(self, optimize_resume: str,job_description: str, coverletter: str):
         print("critiquing the initial output against the requirements or desired quality")
@@ -257,6 +157,7 @@ class Agents:
        <role>
        You are resume and coverletter Critique assistant
        </role>
+       
 
        <Context>
        optimize_resume: {optimize_resume}
@@ -317,12 +218,139 @@ class Agents:
                 break
         return optimize_resume_coverletter
             
-            
+    async def agent_scoring(self, optimizer_resume: str, job_description: str) -> Dict:
+        """
+        Computes ATS scores
+        - job matching score
+        - Keyword
+        - skills
+        - experience
+        - format
+        - impact
+        """
+        prompt = f"""
+                <role>
+                You are a strict ATS (Applicant Tracking System) resume scoring assistant.
+                Your task is to evaluate how well a resume matches a job description.
+                </role>
 
+                <context>
+                RESUME:
+                {optimizer_resume}
+
+                JOB DESCRIPTION:
+                {job_description}
+                </context>
+
+                <instructions>
+
+                GENERAL RULES:
+                - Do NOT assume missing information
+                - Do NOT invent experience or skills
+                - Base all scoring strictly on the provided resume content
+
+                SCORING CRITERIA (0–100 each):
+                1. KEYWORDS:
+                - Compare job description keywords with resume
+                - Score based on coverage and relevance
+
+                2. SKILLS:
+                - Match required vs present skills
+                - Consider depth and relevance
+
+                3. EXPERIENCE:
+                - Estimate total years of relevant experience from dates (sum durations, do NOT multiply)
+                - Compare with job requirements if provided
+                - Evaluate relevance of past roles
+
+                4. IMPACT:
+                - Check for measurable achievements (metrics, results, outcomes)
+                - Penalize vague or generic responsibilities
+
+                FINAL SCORE:
+                - Compute overall job matching score as weighted average:
+                    Keywords (30%)
+                    Skills (25%)
+                    Experience (25%)
+                    Impact (20%)
+                </instructions>
+
+                <output_format>
+                - overall_score
+                - keywords
+                - skills
+                - experience
+                - impact
+
+                </output_format>
+                """
+
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt,
+            config={
+        "response_mime_type": "application/json",
+        "response_json_schema": ATSScore.model_json_schema()},
+        )
+        matching_score_details = ATSScore.model_validate_json(response.text).model_dump()
+        return matching_score_details
+        
+
+    async def insight_agent(self,original_resume: str, optimized_resume: str, job_description: str, ats_job_score: Dict):
+
+        prompt = f"""
+                <role>
+                You are an AI resume coach that explains ATS scoring results clearly and actionably.
+                </role>
+
+                <context>
+                ORIGINAL RESUME:
+                {original_resume}
+
+                OPTIMIZED RESUME:
+                {optimized_resume}
+
+                JOB DESCRIPTION:
+                {job_description}
+
+                SCORES:
+                {ats_job_score}
+                </context>
+
+                <instructions>
+
+                1. Compare original vs optimized resume
+                2. Identify what changed and why
+                3. Highlight improvements made
+                4. Explain remaining gaps
+                5. Provide actionable recommendations
+
+                Rules:
+                - Do NOT repeat entire resume
+                - Be specific and concise
+                - Focus on improvements and impact
+                - strictly don't include any summary
+
+                </instructions>
+
+                <output_format>
+
+                Return markdown format:
+                - What Changed
+                - Key Improvements
+                - Remaining Gaps
+                - Actionable Recommendations
+                </output_format>
+                """
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt
+            )
+        return response.text
     
 
-
-    async def agent_update_resume_or_coverletter(self):
+    async def agent_update_resume_or_coverletter(self,optimize_resume: str, coverletter: str,
+                                                  job_description: str, user_query:str ):
         """
         conversation agent with tools and memory to update resume or coverletter base on user request
         Tools:
@@ -330,3 +358,71 @@ class Agents:
         - tool_update_resume
         - memory
         """
+
+        prompt_router = f"""
+                Analyze the user query below and determine its category.
+                Categories:
+                - resume: For update or rewrite about the optimize resume.
+                - coverletter: For update or rewrite about the coverletter
+                - unknown: If the category is unclear.
+
+                Query: {user_query}
+              """
+        response_router = self.client.models.generate_content(
+            model=self.model,
+            contents=prompt_router,
+            config={
+                'response_mime_type': 'application/json',
+                'response_schema': RoutingDecision,
+            },
+        )
+
+        final_response = ''
+
+        if response_router.parse.Category == Category.RESUME:
+
+            prompt_resume = f"""
+                """
+            resume_response =  self.client.models.generate_content(
+                model=self.model,
+                contents=prompt_resume
+            )
+            final_response = {"resume":resume_response.text}
+        elif response_router.parse.Category == Category.COVERLETTER:
+             
+            prompt_coverletter = f"""
+               <role>
+               your are a 
+               </role>
+               <context>
+                COVERLETTER:
+                {coverletter}
+                JOB DESCRIPTION:
+                {job_description}
+               </context>
+
+                <instructions>
+                </instructions>
+
+                <output_format>
+                return a markdown format of the update coverletter
+                </output_format>
+                """
+            coverletter_response = self.client.models.generate_content(
+                model= self.model,
+                contents=prompt_coverletter
+                )
+            final_response = {"coverletter":coverletter_response.text}
+
+        else:
+            prompt_unknown = f"""
+                    The user query is: {prompt_router}, 
+                    but could not be answered. Here is the reasoning: {response_router.parsed.reasoning}. 
+                    Write a helpful response to the user for him to try again.
+                    """
+            unknown_response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt_unknown
+                )
+            final_response = {"unknown":unknown_response}
+        return final_response 

@@ -48,19 +48,29 @@ async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form
     validated = await agent.agent_validate_resume_jd(extract_resume_text,job_description)
 
     if validated:
-        extracted_section = await agent.agent_sections_extractor(extract_resume_text)
-        resume_coverletter_refinement = await agent.agent_refinement(extracted_section,job_description)
+        resume_coverletter_refinement = await agent.agent_refinement(extract_resume_text,job_description)
         optimize_resume_coverLetter = await agent.agent_reflection(resume_coverletter_refinement.resume,job_description,
                                                                    resume_coverletter_refinement.coverletter)
-        optimize_coverletter =  optimize_resume_coverLetter['coverletter']
+
+        ats_score = await agent.agent_scoring(optimize_resume_coverLetter['resume'],job_description)
+        summary_insight = await agent.insight_agent(resume,optimize_resume_coverLetter['resume'],job_description,ats_score)
+        optimize_result = {
+            "optimizeResume":optimize_resume_coverLetter['resume'],
+            "coverLetter":optimize_resume_coverLetter['coverletter'],
+            "ats_score":ats_score,
+            "insight_summary": summary_insight
+        }
         optimize_resume = optimize_resume_coverLetter['resume']
         pprint(optimize_resume_coverLetter,indent=4)
+        return optimize_result 
+         
     else:
         return {"status":"Error"}
     
-    return {"filename":resume.file}
 
 
 @app.post("/chat/agent/")
-async def chat_agent(resume):
+async def chat_agent(optimize_resume: str, coverletter: str,
+                        job_description: str, user_query:str ):
+     
     return {"documents":""}
