@@ -5,6 +5,8 @@ from utils.document_processing import ProcessDocument
 from ai_services.agents import Agents
 from pprint import pprint
 import asyncio
+import logging
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
 
 app = FastAPI(title="Resume Optimizer",
               summary="Advance resume optimization system for ATS (Application Tracking system)")
@@ -31,10 +33,12 @@ async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form
     agent = Agents(api_key='',model='',voice_model='')
  
     extract_resume_text = ""
+    statusError = ""
+
 
     # process resume file
     if resume.content_type =="application/pdf":
-        print(f"processing resume: {resume.filename} type: PDF")
+        logging.info("processing resume: %s type: PDF",resume.filename)
         contents = await resume.read()
         # extract text content from pdf document
         extract_resume_text = ProcessDocument(contents).process_pdf_file() 
@@ -47,25 +51,42 @@ async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form
     # validate resume and job descriptions
     validated = await agent.agent_validate_resume_jd(extract_resume_text,job_description)
 
+
     if validated:
         resume_coverletter_refinement = await agent.agent_refinement(extract_resume_text,job_description)
-        optimize_resume_coverLetter = await agent.agent_reflection(resume_coverletter_refinement.resume,job_description,
+        if agent.is_error(resume_coverletter_refinement):
+              return {"status":"error","message":resume_coverletter_refinement.get('message')}
+             
+        optimize_resume_coverLetter_reflection = await agent.agent_reflection(resume_coverletter_refinement.resume,job_description,
                                                                    resume_coverletter_refinement.coverletter)
+        if agent.is_error(optimize_resume_coverLetter_reflection):
+              return {"status":"error","message":optimize_resume_coverLetter_reflection.get('message')}
+             
 
-        ats_score = await agent.agent_scoring(optimize_resume_coverLetter['resume'],job_description)
-        summary_insight = await agent.insight_agent(resume,optimize_resume_coverLetter['resume'],job_description,ats_score)
+        ats_score = await agent.agent_scoring(optimize_resume_coverLetter_reflection.get('resume'),job_description)
+
+        if agent.is_error(ats_score):
+               return {"status":"error","message":ats_score.get('message')}
+             
+        summary_insight = await agent.insight_agent(resume,optimize_resume_coverLetter_reflection.get('resume'),job_description,ats_score)
+        if agent.is_error(summary_insight):
+              return {"status":"error","message":summary_insight.get('message')}
+        
+              
         optimize_result = {
-            "optimizeResume":optimize_resume_coverLetter['resume'],
-            "coverLetter":optimize_resume_coverLetter['coverletter'],
+            "optimizeResume":optimize_resume_coverLetter_reflection.get('resume'),
+            "coverLetter":optimize_resume_coverLetter_reflection.get('coverletter'),
             "ats_score":ats_score,
             "insight_summary": summary_insight
-        }
-        optimize_resume = optimize_resume_coverLetter['resume']
-        pprint(optimize_resume_coverLetter,indent=4)
-        return optimize_result 
-         
+            }
+        return optimize_result
+
+    elif validated.get('status') == "error":          
+            return   {"status":"error","message":validated['message']}
     else:
-        return {"status":"Error"}
+            return {"status":"error","message":"upload a valid resume or job description"}
+    
+    
     
 
 

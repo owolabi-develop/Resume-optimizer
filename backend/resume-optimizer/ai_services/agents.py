@@ -5,15 +5,18 @@ import json
 from google import genai
 from google.genai import errors
 import enum
+import logging
 from dotenv import load_dotenv
 from .structure_output import (ValidationStatus,OptimizeResumeCoverletter,OptimizeResumeEvaluation,
                                EvaluationStatus,ATSScore,RoutingDecision,Category)
 load_dotenv()
-
-
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
 
 
 # Workflow: Prompt Chaining
+
+
+
 class Agents:
     
     def __init__(self,api_key: str, model: str, voice_model: str | None):
@@ -21,10 +24,13 @@ class Agents:
         self.model = model or  os.getenv("CHAT_MODEL")
         self.voice_model = model or  os.getenv("VOICE_MODEL")
         self.client = voice_model or genai.Client(api_key=self.api_key)
+    
+    def is_error(self,result) -> bool:
+        return isinstance(result,dict) and result.get('status') == "error"
 
 
     async def agent_validate_resume_jd(self, resume: str, job_description: str) -> bool:
-        print("validating resume and job description..")
+        logging.info("validating resume and job description..")
         """
         Validates input quality and relevance.
 
@@ -57,21 +63,29 @@ class Agents:
                  </output_format>
 
                 """
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config={
-        "response_mime_type": "application/json",
-        "response_json_schema": ValidationStatus.model_json_schema()},
-        )
-        result = ValidationStatus.model_validate_json(response.text)
-        return result.status
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config={
+            "response_mime_type": "application/json",
+            "response_json_schema": ValidationStatus.model_json_schema()},
+            )
+            result = ValidationStatus.model_validate_json(response.text)
+           
+        except (errors.APIError, errors.ServerError,errors.ClientError) as e:   
+            logging.error('%s',str(e.message))
+            return {"status":"error","message":str(e.message)}
+        else:
+            return result.status 
 
 
     
 
     async def agent_refinement(self, extracted_resume_sections: Dict, 
                             job_description: str) -> Dict:
+        logging.info("refining resume and job descriptions")
         
         prompt = f"""
     
@@ -124,19 +138,29 @@ class Agents:
                 </output_format>
 
                  """
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config={
-        "response_mime_type": "application/json",
-        "response_json_schema": OptimizeResumeCoverletter.model_json_schema()},
-        )
-        resume_coverletter = OptimizeResumeCoverletter.model_validate_json(response.text)
-        return resume_coverletter
-        
+        try:
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config={
+            "response_mime_type": "application/json",
+            "response_json_schema": OptimizeResumeCoverletter.model_json_schema()},
+            )
+            resume_coverletter = OptimizeResumeCoverletter.model_validate_json(response.text)
+        except (errors.APIError, errors.ServerError, errors.ClientError) as e:   
+            logging.error('%s',str(e.message))
+            return {"status":"error","message":str(e.message)}
+        else:
+            return resume_coverletter
+    
+    
+    
+    
+
+            
 
     async def agent_reflection(self, optimize_resume: str,job_description: str, coverletter: str):
-        print("critiquing the initial output against the requirements or desired quality")
+        logging.info("critiquing the initial output against the requirements or desired quality")
 
         """
         Evaluates:
@@ -183,12 +207,17 @@ class Agents:
         while current_iteration < max_iterations:
             current_iteration +=1
 
-            response_critique = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt,
-                config={"response_mime_type": "application/json",
-                     "response_schema": OptimizeResumeEvaluation}
-                     )
+            try:
+                response_critique = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt,
+                    config={"response_mime_type": "application/json",
+                        "response_schema": OptimizeResumeEvaluation}
+                        )
+            except (errors.APIError, errors.ServerError,errors.ClientError) as e:   
+                logging.error('%s',str(e.message))
+                return {"status":"error","message":str(e.message)}
+        
             evaluation_result = response_critique.parsed
             if evaluation_result.evaluation == EvaluationStatus.PASS:
                 optimize_resume_coverletter = {
@@ -204,6 +233,7 @@ class Agents:
                 }
                 if current_iteration == max_iterations: 
                   
+                  
                   optimize_resume_coverletter = {
                     "resume":optimize_resume,
                     "coverletter":coverletter
@@ -212,6 +242,7 @@ class Agents:
         return optimize_resume_coverletter
             
     async def agent_scoring(self, optimizer_resume: str, job_description: str) -> Dict:
+        logging.info("Scoring resume and evaluating how well a resume matches a job description.")
         """
         Computes ATS scores
         - job matching score
@@ -277,19 +308,25 @@ class Agents:
 
                 </output_format>
                 """
+        try:    
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt,
+                config={
+            "response_mime_type": "application/json",
+            "response_json_schema": ATSScore.model_json_schema()},
+            )
+            matching_score_details = ATSScore.model_validate_json(response.text).model_dump()
 
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt,
-            config={
-        "response_mime_type": "application/json",
-        "response_json_schema": ATSScore.model_json_schema()},
-        )
-        matching_score_details = ATSScore.model_validate_json(response.text).model_dump()
+        except (errors.APIError, errors.ServerError, errors.ClientError) as e:   
+            logging.error('%s',str(e.message))
+            return {"status":"error","message":str(e.message)}
+        
         return matching_score_details
         
 
     async def insight_agent(self,original_resume: str, optimized_resume: str, job_description: str, ats_job_score: Dict):
+        logging.info("Explaining ATS scoring results clearly and actionably")
 
         prompt = f"""
                 <role>
@@ -335,18 +372,25 @@ class Agents:
                 - Actionable Recommendations
                 </output_format>
                 """
-        response = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt
-            )
+        try:
+            response = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt
+                )
+        except (errors.APIError, errors.ServerError, errors.ClientError) as e:   
+            logging.error('%s',str(e.message))
+            return {"status":"error","message":str(e.message)}
         return response.text
+
+
+    
     
 
     async def agent_update_resume_or_coverletter(self,optimize_resume: str, coverletter: str,
                                                   job_description: str, user_query:str ):
         """
-        conversation agent with tools and memory to update resume or coverletter base on user request
-        Tools:
+        conversation agent with router and memory to update resume or coverletter base on user request
+        route:
         - tool_update_coverletter
         - tool_update_resume
         - memory
