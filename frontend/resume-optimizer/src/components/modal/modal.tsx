@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAuthStore } from "../../lib/store";
+import { useAuthStore } from "../../hooks/store";
 
 type Toggle = {
      isOpen?: boolean;

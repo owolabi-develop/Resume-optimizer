@@ -54,7 +54,7 @@ class MemoryLogs(BaseModel):
         "update_cover_letter"
     ] = Field(description="Type of change made by the AI")
     section: str = Field(description="Section of resume that was modified")
-    detail: str = Field(description="Short description of what changed")
+    detail: str = Field(description="Short description of what changed and what you did")
     user_intent: str = Field(description="What the user asked for")
     timestamp: datetime = Field(default_factory=datetime.now())
 

@@ -535,9 +535,9 @@ class Agents:
                 },
                 )
             
-            updated_coverletter = UpdateCoverletter.model_validate_json(resume_response.text).model_dump()
+            updated_coverletter = UpdateCoverletter.model_validate_json(coverletter_response.text).model_dump()
             ## update memory with coverletter user intent
-            
+
             final_response = {"type":"coverLetter","coverletter":updated_coverletter.coverletter}
 
         else:

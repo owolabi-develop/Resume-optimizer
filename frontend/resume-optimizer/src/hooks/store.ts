@@ -22,3 +22,37 @@ export const useAuthStore = create<authState>()(
 
      ),
 )
+
+
+
+interface ChatMessage {
+  human: string;
+  ai: string;
+}
+
+interface ChatStore {
+  chats: ChatMessage[];
+  addChat: (message: ChatMessage) => void;
+  clearChats: () => void;
+}
+
+export const useChatResponse = create<ChatStore>()(
+  persist(
+    (set) => ({
+      chats: [],
+
+      addChat: (message) =>
+        set((state) => ({
+          chats: [...state.chats, message],
+        })),
+
+      clearChats: () =>
+        set(() => ({
+          chats: [],
+        })),
+    }),
+    {
+      name: "chat-response",
+    }
+  )
+);

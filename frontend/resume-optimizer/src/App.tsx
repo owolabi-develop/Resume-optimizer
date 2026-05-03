@@ -1,6 +1,6 @@
 import { useState,useRef } from "react";
 import { ToastContainer,toast} from 'react-toastify';
-import { useAuthStore } from "./lib/store";
+import { useAuthStore } from "./hooks/store";
 
 import HeaderSection from "./components/Header/HeaderSection";
 import { Upload, Brain, SendHorizontal} from "lucide-react";
