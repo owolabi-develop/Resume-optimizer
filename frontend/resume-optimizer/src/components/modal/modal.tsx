@@ -1,18 +1,17 @@
 import { useState } from "react";
+import { useAuthStore } from "../../lib/store";
 
 type Toggle = {
      isOpen?: boolean;
 }
 
 const CredentialsSettings = ({isOpen=false}:Toggle) => {
-  const [apiKey, setApiKey] = useState("");
-  const [model, setModel] = useState("gemini-3-flash-preview");
-   const [voiceModel, setVoiceModel] = useState("gemini-3.1-flash-live-preview");
-
-  const handleSave = () => {
-    console.log({ apiKey, model });
-
-  };
+ 
+  const [voiceModel, setVoiceModel] = useState("gemini-3.1-flash-live-preview");
+  const model = useAuthStore((state) => state.model_name)
+  const setModel = useAuthStore((state) => state.setModelName)
+   const apiKey = useAuthStore((state) => state.model_api_key)
+   const setApiKey = useAuthStore((state) => state.setApiKey)
 
   return (
     <div className={`bg-white w-[380px] shadow-xl absolute z-10 left-10 top-25 border border-gray-200 rounded-xl p-4 space-y-4 
@@ -43,7 +42,7 @@ const CredentialsSettings = ({isOpen=false}:Toggle) => {
           onChange={(e) => setModel(e.target.value)}
           className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
         >
-          <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+          <option value="gemini-2.5-flash" selected>gemini-2.5-flash</option>
           <option value="gemini-2.5-flash-lite">gemini-2.5-flash-lite</option>
           <option value="gemini-2.5-pro">gemini-2.5-pro</option>
         <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview</option>
@@ -62,13 +61,7 @@ const CredentialsSettings = ({isOpen=false}:Toggle) => {
         </select>
       </div>
 
-      {/* SAVE BUTTON */}
-      <button
-        onClick={handleSave}
-        className="w-full bg-black text-white py-2 rounded-lg text-sm hover:opacity-90 transition"
-      >
-        Save Settings
-      </button>
+  
 
     </div>
   );

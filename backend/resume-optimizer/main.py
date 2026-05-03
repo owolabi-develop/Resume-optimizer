@@ -1,11 +1,14 @@
-from fastapi import FastAPI, BackgroundTasks,UploadFile,Form,File
+from fastapi import FastAPI,UploadFile,Form,HTTPException,status
+from fastapi.security import OAuth2PasswordBearer
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Annotated
+from pydantic import BaseModel
 from utils.document_processing import ProcessDocument
 from ai_services.agents import Agents
 from pprint import pprint
 import asyncio
 import logging
+
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
 
 app = FastAPI(title="Resume Optimizer",
@@ -14,7 +17,7 @@ app = FastAPI(title="Resume Optimizer",
 
 # CORS (Cross-Origin Resource Sharing) config
 origins = [
-    "http://localhost:5173/",
+    "http://localhost:5173",
     "http://localhost",
     "http://localhost:8080",
 ]
@@ -27,10 +30,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/resume/optimize/")
-async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form()]):
+
+
+
+class ResumeData(BaseModel):
+      model_name: str
+      model_api_key: str
+      job_description: str
+     
+
+class ChatAgent(BaseModel):
+    coverLetter:str
+    optimized_resume: str
+    job_description:str
+    user_query: str
+    model_name: str
+    model_api_key: str
+
+@app.post("/resume/optimize/api/")
+async def optimize_resume(resume:UploadFile,
+                          model_name:Annotated[str, Form()],
+                        model_api_key:Annotated[str, Form()],
+                        job_description:Annotated[str, Form()]):
     # get the agents class
-    agent = Agents(api_key='',model='',voice_model='')
+    agent = Agents(api_key=model_api_key,model=model_name,voice_model='')
  
     extract_resume_text = ""
     statusError = ""
@@ -55,22 +78,22 @@ async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form
     if validated:
         resume_coverletter_refinement = await agent.agent_refinement(extract_resume_text,job_description)
         if agent.is_error(resume_coverletter_refinement):
-              return {"status":"error","message":resume_coverletter_refinement.get('message')}
-             
+              raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail=resume_coverletter_refinement.get('message'))
+        
         optimize_resume_coverLetter_reflection = await agent.agent_reflection(resume_coverletter_refinement.resume,job_description,
                                                                    resume_coverletter_refinement.coverletter)
         if agent.is_error(optimize_resume_coverLetter_reflection):
-              return {"status":"error","message":optimize_resume_coverLetter_reflection.get('message')}
-             
-
+             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail=optimize_resume_coverLetter_reflection.get('message'))
+              
         ats_score = await agent.agent_scoring(optimize_resume_coverLetter_reflection.get('resume'),job_description)
 
         if agent.is_error(ats_score):
-               return {"status":"error","message":ats_score.get('message')}
-             
+             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail=ats_score.get('message'))
+               
         summary_insight = await agent.insight_agent(resume,optimize_resume_coverLetter_reflection.get('resume'),job_description,ats_score)
         if agent.is_error(summary_insight):
-              return {"status":"error","message":summary_insight.get('message')}
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail=summary_insight.get('message'))
+             
         
               
         optimize_result = {
@@ -81,17 +104,18 @@ async def optimize_resume(resume:UploadFile,job_description: Annotated[str, Form
             }
         return optimize_result
 
-    elif validated.get('status') == "error":          
-            return   {"status":"error","message":validated['message']}
+    elif validated.get('status') == "error": 
+         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail=validated['message'])
     else:
-            return {"status":"error","message":"upload a valid resume or job description"}
+          raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail="upload a valid resume or job description")
+          
     
     
     
 
 
-@app.post("/chat/agent/{optimize_resume}/{coverletter}/{job_description}/{user_query}")
-async def chat_agent(optimize_resume: str, coverletter: str,
-                        job_description: str, user_query:str ):
+@app.post("/resume/chat/agent/")
+async def chat_agent(item:ChatAgent):
+    
      
     return {"documents":""}

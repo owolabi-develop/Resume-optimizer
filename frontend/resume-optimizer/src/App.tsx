@@ -1,54 +1,121 @@
-import React, { useState,useRef } from "react";
+import { useState,useRef } from "react";
+import { ToastContainer,toast} from 'react-toastify';
+import { useAuthStore } from "./lib/store";
 
 import HeaderSection from "./components/Header/HeaderSection";
 import { Upload, Brain, SendHorizontal} from "lucide-react";
-import { sampleResume } from "./components/samples";
 import {AtsScore,SkillsAnalysis
 } from "./components/Analysis";
 import { CoverLetter,ResumeContainer } from "./components/ResumeContainer";
-import ResumeVersion from "./components/ResumeVersion";
 import {  Recorder } from "./components/Recorder/Recorder";
+import { optimizeResumeData,chatAgent } from "./lib/api/optimize_resume.api";
 
 
 
 
 export default function App() {
-  const [resume, setResume] = useState(sampleResume);
+  const [noTtakeAction,setNotTakeAction] = useState(true)
+  const [optimizing,setIsOptimizing] = useState(false)
+  const [resume, setResume] = useState('');
   const [coverLetterText, setCoverLetterText] = useState('');
+  const [jD, setJd] = useState('');
+
+
+  const initial_atsScore = {
+  job_matching_score:0,
+  keyword:0,
+  skills:0,
+  experience:0,
+  impact:0
+  }
+  const [atsScore, setSAtscore] = useState(initial_atsScore);
   
-  const [skillsAnalysis,SetskillsAnalysis] = useState(
-    {present:["Python", "FastAPI", "SQL"],missing:["Docker", "AWS", "Kubernetes"]})
+  const [insightSummary,SetInsightSummary] = useState('')
 
   const [chat, setChat] = useState([
     { role: "ai", text: "Ask me to improve your resume" },
   ]);
   const [input, setInput] = useState("");
-  const [score, setScore] = useState(72);
-   const [jD, setJd] = useState('');
-  const [versions, setVersions] = useState(["Initial version"]);
+
+  
+  
+  
 
   const [resumeFile,SetResumeFile] = useState<File | null>()
 
   const resumeFileRef = useRef<HTMLInputElement | null>(null)
-  const [openTemplate,setOpenTemplate] = useState(false)
+  // const [openTemplate,setOpenTemplate] = useState(false)
 
   const handleFileClick = () => {
   
   }
 
-  const SendHorizontalMessage = () => {
+  const SendHorizontalMessage =  async () => {
     if (!input) return;
-
+    const data = await chatAgent({
+      coverLetter:coverLetterText,
+      optimized_resume:resume,
+      job_description:jD,
+      user_query:input,
+      model_api_key:model_api_key,
+      model_name:model_name,
+    })
+    if(data){
+      if (data?.type ==="resume"){
+        setResume(data.resume)
+        setSAtscore(data.ats_score)
+        SetInsightSummary(data.insight_summary)
+      }
+      if (data?.type === "coverLetter"){
+       setCoverLetterText(data.coverLetter)
+      }
+       if (data?.type === "unknown"){
+       setCoverLetterText(data.coverLetter)
+      }
+     
+      
+     
+     }
   };
 
-  const optimizeResume = () => {
+  const {model_api_key, model_name} = useAuthStore()
+
+  const optimizeResume = async () => {
+
+    if (!resumeFile)return;
+    if(!jD) return;
+    setIsOptimizing(true)
+     const data = await optimizeResumeData({
+      resume:resumeFile,
+      model_api_key:model_api_key,
+      model_name:model_name,
+      job_description:jD
+     })
+     
+     if(data){
+      setResume(data.optimizeResume)
+      setCoverLetterText(data.coverLetter)
+      setSAtscore(data.ats_score)
+      SetInsightSummary(data.insight_summary)
+
+      // take action like document, or chat with assistant
+      setNotTakeAction(false)
+
+      
+     }
+     setIsOptimizing(false)
+    
+
    
   };
 
   return (
     <section className="h-auto w-full bg-gray-100 relative'
     ">
+
       <HeaderSection />
+
+      <ToastContainer />
 
       {/* Resume template */}
 
@@ -60,10 +127,10 @@ export default function App() {
       <div className="flex gap-4 p-4 flex-col md:flex-row">
 
         {/* LEFT */}
-        <div className="h-[80rem] flex-1 flex flex-col gap-4">
+        <div className="h-[78rem] flex-1 flex flex-col gap-4">
 
          {/* resumes before and after */}
-         <ResumeContainer resumeBefore={resume} resumeAfter={resume}/>
+         <ResumeContainer resume={resume} takeAction={noTtakeAction}/>
 
          {/* resumes before and after */}
 
@@ -94,11 +161,13 @@ export default function App() {
                 onChange={(e)=>{setJd(e.target.value)}}
               />
 
-              <button
+              <button disabled={optimizing}
                 onClick={optimizeResume}
-                className="text-xs px-3 py-2 border rounded hover:bg-gray-400 bg-gray-500 text-white"
+               
+                className={`text-xs px-3 py-2 border rounded text-white  ${optimizing ? "bg-gray-500 cursor-not-allowed": "bg-gray-400 hover:bg-gray-500 cursor-pointer"}`}
               >
-                Optimize Resume
+                {optimizing ? "optimizing resume...":"Optimize Resume"}
+               
               </button>
             </div>
           </div>
@@ -108,14 +177,13 @@ export default function App() {
         <div className="w-full md:w-[32%] flex flex-col gap-4">
 
           {/* AtsScore */}
-          <AtsScore score={score} 
-          breakdown={{keywords: 
-            78,skills: 80, experience: 85,format: 90,impact: 75,
+          <AtsScore score={atsScore.job_matching_score} 
+          breakdown={{keywords: atsScore.keyword,skills:atsScore.skills, 
+            experience:atsScore.experience,impact:atsScore.impact,
                 }}/>
 
     
-      <SkillsAnalysis present={skillsAnalysis?.present} missing={skillsAnalysis?.missing}
-      />
+      <SkillsAnalysis insight_summary={insightSummary}/>
 
      
 
@@ -156,9 +224,9 @@ export default function App() {
                 placeholder="Chat with your resume"
               />
               <Recorder/>
-              <button
+              <button disabled={noTtakeAction}
                 onClick={SendHorizontalMessage}
-                className="text-xs px-3 py-2 border rounded-xl hover:bg-gray-400 bg-gray-500 text-white"
+                className={`text-xs px-3 py-2 border rounded-xl text-white ${noTtakeAction ? "bg-gray-500 cursor-not-allowed": "bg-gray-400 hover:bg-gray-500 cursor-pointer"}`}
               >
                 <SendHorizontal size={14} />
               </button>
@@ -169,17 +237,9 @@ export default function App() {
 
         {/* cover letter container */}
 
-           <CoverLetter coverLetter={coverLetterText}/>
+           <CoverLetter coverLetter={coverLetterText} takeAction={noTtakeAction}/>
 
         {/* cover letter */}
-
-
-
-        {/* resume version */}
-
-        <ResumeVersion resumeVersions={versions}/>
-
-        {/* resume version */}
 
         </div>
       </div>

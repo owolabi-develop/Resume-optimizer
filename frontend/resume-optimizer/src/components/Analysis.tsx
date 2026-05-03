@@ -1,10 +1,9 @@
-import { Plus } from 'lucide-react';
+import ReactMarkdown from 'react-markdown'
 
 type Breakdown = {
   keywords: number
   skills: number
   experience: number
-  format: number
   impact: number
 }
 
@@ -37,7 +36,6 @@ export const AtsScore = ({ score, breakdown }: AtsScoreProps) => {
         <div className="flex justify-between"><span>Keywords</span><span>{breakdown.keywords}%</span></div>
         <div className="flex justify-between"><span>Skills</span><span>{breakdown.skills}%</span></div>
         <div className="flex justify-between"><span>Experience</span><span>{breakdown.experience}%</span></div>
-        <div className="flex justify-between"><span>Format</span><span>{breakdown.format}%</span></div>
         <div className="flex justify-between"><span>Impact</span><span>{breakdown.impact}%</span></div>
       </div>
 
@@ -48,38 +46,20 @@ export const AtsScore = ({ score, breakdown }: AtsScoreProps) => {
 
 
 
-type SkillsAnalysisProps = {
-  present: string[]
-  missing: string[]
+type InsightSummary = {
+  insight_summary:string
 }
 
-export const SkillsAnalysis = ({ present, missing }: SkillsAnalysisProps) => {
+export const SkillsAnalysis = ({ insight_summary}: InsightSummary) => {
   return (
     <div className="bg-white border rounded-xl p-4 space-y-3">
-      <h3 className="font-semibold">Skills Analysis</h3>
+      <h3 className="font-semibold">Insight Summary</h3>
 
-      <div className="space-y-2">
-        <p className="text-xs text-gray-500">Present</p>
-        <div className="flex flex-wrap gap-2">
-          {present.map((s) => (
-            <span key={s} className="bg-green-50 text-green-600 px-2 py-1 text-xs rounded">
-              {s}
-            </span>
-          ))}
-        </div>
+      <div className="text-base h-80 flex-1 overflow-y-auto p-4 prose prose-sm custom-scrollbar">
+        <ReactMarkdown>{insight_summary}</ReactMarkdown>
       </div>
 
-      <div className="space-y-2">
-        <p className="text-xs text-gray-500">Missing</p>
-        <div className="flex flex-wrap gap-2">
-          {missing.map((s) => (
-            <span key={s} className="bg-red-50 text-red-600 px-2 py-1 text-xs 
-            rounded flex items-center justify-center gap-2 cursor-pointer">
-              {s}  <Plus size={15}/>
-            </span>
-          ))}
-        </div>
-      </div>
+      
     </div>
   )
 }

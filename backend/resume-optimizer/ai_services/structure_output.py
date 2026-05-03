@@ -9,13 +9,13 @@ class ValidationStatus(BaseModel):
 
 
 class OptimizeResumeCoverletter(BaseModel):
-    resume: str = Field(description="the optimize resume text return as markdown")
-    coverletter: str = Field(description="the optimize coverletter text return as markdown")
+    resume: str = Field(description="The fully optimized resume written in markdown format")
+    coverletter: str = Field(description="The tailored cover letter written in markdown format")
 
 
 class ATSScore(BaseModel):
     job_matching_score: int  = Field(description="the total matching score of the job")
-    Keyword: int  = Field(description="the numbers of keyword matching the candidate resume")
+    keyword: int  = Field(description="the numbers of keyword matching the candidate resume")
     skills: int  = Field(description="The numbers of skill match on the candidate resume ")
     experience: int  = Field(description="The candidate experience percentage match the job description")
     impact: int  = Field(description="the impact of the resume")
@@ -40,3 +40,31 @@ class Category(enum.Enum):
 class RoutingDecision(BaseModel):
     category: Category
     reasoning: str
+
+from pydantic import BaseModel, Field
+from datetime import datetime
+from typing import Literal
+
+class MemoryLogs(BaseModel):
+    action: Literal[
+        "add_skill",
+        "remove_skill",
+        "update_summary",
+        "rewrite_experience",
+        "update_cover_letter"
+    ] = Field(description="Type of change made by the AI")
+    section: str = Field(description="Section of resume that was modified")
+    detail: str = Field(description="Short description of what changed")
+    user_intent: str = Field(description="What the user asked for")
+    timestamp: datetime = Field(default_factory=datetime.now())
+
+
+
+
+class UpdateResume(BaseModel):
+    resume:str
+    memorylogs: MemoryLogs
+
+class UpdateCoverletter(BaseModel):
+    coverletter:str
+    memorylogs: MemoryLogs

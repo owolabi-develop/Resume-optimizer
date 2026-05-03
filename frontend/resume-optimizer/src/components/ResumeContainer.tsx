@@ -4,15 +4,16 @@ import TemplateContainer from './Template/Container'
 import { useState } from 'react'
 
 type ResumeContainerProps = {
-    resumeBefore?:string
-    resumeAfter?:string
+    resume?:string
+    takeAction:boolean
 }
 
 type CoverLetterProps = {
     coverLetter?:string
+    takeAction:boolean
 }
 
-export const ResumeContainer:React.FC<ResumeContainerProps> = ({resumeBefore,resumeAfter}) => {
+export const ResumeContainer:React.FC<ResumeContainerProps> = ({resume,takeAction}) => {
 
   const [openTemplate,setOpenTemplate] = useState(false)
 
@@ -22,27 +23,18 @@ export const ResumeContainer:React.FC<ResumeContainerProps> = ({resumeBefore,res
           <div className="flex-1 bg-white rounded-lg border border-gray-50 shadow-xl flex flex-col overflow-hidden relative">
              {/* EDITOR + PREVIEW */}
             <div className="flex justify-end gap-2 p-1 border-b bg-gray-50">
-              <button  onClick={()=>setOpenTemplate(prev => !prev)}
-              className="text-xs px-3 py-2 border rounded
-               hover:bg-gray-400 bg-gray-500 text-white"
+              <button disabled={takeAction} onClick={()=>setOpenTemplate(prev => !prev)}
+              className={`text-xs px-3 py-2 border rounded text-white  
+                ${takeAction ? "bg-gray-500 cursor-not-allowed": "bg-gray-400 hover:bg-gray-500 cursor-pointer"} `}
               >
                 Download Resume
               </button>
             </div>
 
-            <div className="p-3 text-gray-500 w-full flex items-start justify-between font-semibold">
-              <p>Before</p>
-              <p>After</p>
-            </div>
-
             <div className="flex flex-1 overflow-hidden">
 
-              <div className="w-1/2 p-6 overflow-y-auto prose prose-sm custom-scrollbar">
-                <ReactMarkdown>{resumeBefore}</ReactMarkdown>
-              </div>
-
-              <div className="w-1/2 p-6 overflow-y-auto prose prose-sm custom-scrollbar">
-                <ReactMarkdown>{resumeAfter}</ReactMarkdown>
+              <div className="w-full p-6 overflow-y-auto prose prose-sm custom-scrollbar">
+                <ReactMarkdown >{resume}</ReactMarkdown>
               </div>
             </div>
           </div>
@@ -51,14 +43,14 @@ export const ResumeContainer:React.FC<ResumeContainerProps> = ({resumeBefore,res
 }
 
 
-export const CoverLetter:React.FC<CoverLetterProps> = ({coverLetter}) => {
+export const CoverLetter:React.FC<CoverLetterProps> = ({coverLetter,takeAction}) => {
   return (
       <div className="h-80 bg-white border-gray-50 shadow-xl rounded-lg flex flex-col">
             <div className="p-2 border-b text-sm w-full flex items-start justify-between">
               <p className="p-2">Cover Letter</p>
 
-              <button
-                className="text-xs px-3 py-2 border rounded hover:bg-gray-400 bg-gray-500 text-white"
+              <button disabled={takeAction}
+                className={`text-xs px-3 py-2 border rounded text-white  ${takeAction ? "bg-gray-500 cursor-not-allowed": "bg-gray-400 hover:bg-gray-500 cursor-pointer"}`}
               >
                 Download Cover Letter
               </button>

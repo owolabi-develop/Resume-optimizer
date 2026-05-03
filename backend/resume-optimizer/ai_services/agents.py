@@ -8,7 +8,7 @@ import enum
 import logging
 from dotenv import load_dotenv
 from .structure_output import (ValidationStatus,OptimizeResumeCoverletter,OptimizeResumeEvaluation,
-                               EvaluationStatus,ATSScore,RoutingDecision,Category)
+                               EvaluationStatus,ATSScore,RoutingDecision,Category,UpdateCoverletter,UpdateResume)
 load_dotenv()
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
 
@@ -76,7 +76,7 @@ class Agents:
            
         except (errors.APIError, errors.ServerError,errors.ClientError) as e:   
             logging.error('%s',str(e.message))
-            return {"status":"error","message":str(e.message)}
+            return {"status":"error","message":str(e.message)[0:100]}
         else:
             return result.status 
 
@@ -91,7 +91,7 @@ class Agents:
     
                  <role> 
                 You are an expert ATS resume and cover letter optimization assistant.
-                Your goal is to improve the resume strictly based on the candidate’s actual experience.
+                Your goal is to optimized the resume strictly based on the candidate’s actual experience.
                  </role>
 
                  <context>
@@ -103,38 +103,82 @@ class Agents:
                  </context>
 
                  <instructions>
-                  Responsibilities:
-                  use the extracted resume sections and job description to generate an optimize resume and coverletter.
+                  Follow these strict resume design rules:
 
-                    RESUME OPTIMIZATION:
+                    RESUME OPTIMIZATION RULE:
                     1. Align the candidate’s title with the job title where appropriate
                     2. Based on the the job description rewrite the objective and professional summary to clearly match the role
                     3. include job-specific keywords from the job description to ensure the resume matches the job requirements.
-                    4. Ensure ATS-friendly Standard clear Headings: 
-                    - Experience
-                    - Education
-                    - Skills"
-                    - Professional Summary
-                    - Projects (if available)
-                    5. Avoid keyword stuffing. 
-                    6. Turn the candidate responsibilities into measurable achievement
-                    7. carefully refine the candidate most recent and relevant roles working experience, and cutout any ambiguous
+                    4. Turn the candidate responsibilities into measurable achievement
+                    5. carefully refine the candidate most recent and relevant roles working experience, and cutout any ambiguous
                     key achievement, task carried out not relating to their responsibilities that doesn't add any value. then 
-                    8. Strictly rewrite each role working experience of the candidate with bullet points that features the keywords and skill found on the job description.
-                    9. For each role craft a bullet point that tells a story of impact and result driven.
-                    10. Strictly avoid adding any details to the optimize resume not included on the job description
+                    6. Strictly rewrite each role working experience of the candidate with bullet points that features the keywords and skill found on the job description.
+                    7. For each role craft a bullet point that tells a story of impact and result driven.
+                    8. Strictly avoid adding any details to the optimize resume not included on the job description
 
-                    COVER LETTER GENERATION:
+                    RESUME DESIGN FORMAT RULES:
+                    - Candidate name must be on the first line in uppercase
+                    - Job title on the second line
+                    - Contact details on separate lines or grouped with "|"
+                    - Include Phone, Email, LinkedIn, and Portfolio (if available)
+                    - Use a standard single-column layout (no tables, no columns, no graphics).
+                    - Use clear section headings: Summary, Skills, Experience, Projects, Education, Certifications (if available).
+                    - Each section heading must:
+                        - Be in UPPERCASE
+                        - Be bold
+                        - End with a colon (e.g., **EXPERIENCE:**, **SKILLS:**)
+                    - Use simple formatting with proper spacing and consistent structure.
+                    - Avoid special characters, icons, emojis, or complex formatting.
+                    - add horizontal line where appropriate
+    
+                    
 
+                    EXPERIENCE SECTION RULES:
+                    - Format:
+                    Job Title | Company Name | Location | Date
+                    - Include 3–5 bullet points per role
+                    - Focus on achievements, not responsibilities
+                    - Highlight technologies used (e.g., Python, FastAPI, AWS, Snowflake)
+
+                    BULLET POINT RULES:
+                    - All responsibilities and achievements must be written as bullet points
+                    - Use a simple dot bullet format (•)
+                    - Each bullet point must:
+                    - Start with a strong action verb
+
+                    SKILLS SECTION RULES:
+                    - Group skills into categories:
+                    - Programming Languages
+                    - Frameworks & Tools
+                    - Cloud & DevOps
+                    - Databases
+                    - Avoid long paragraphs—use clean lists
+                
+                    COVER LETTER GENERATION RULE:
                     - Write a concise and tailored cover letter
                     - Clearly connect candidate experience to job requirements
                     - Show alignment with company goals
                     - Keep it professional and direct
+
+                    COVERLETTER STRUCTURE:
+                    - Use a standard business format:
+                    - Greeting (e.g., "Dear Hiring Manager,")
+                    - Opening paragraph
+                    - 1–2 body paragraphs
+                    - Closing paragraph
+                    - Professional sign-off (e.g., "Sincerely,")
+
+                    OUTPUT RULES:
+                    - Return both the final formatted resume and coverletter
+                    - Do NOT include explanations
+                    - Use clean markdown formatting
+                    - Ensure readability and professional tone
+                    
                  
                  </instructions> 
 
                  <output_format>
-                return  a markdown format for both optimized resume and the coverletter 
+                  return a clean markdown format for both optimized resume and the coverletter 
                 </output_format>
 
                  """
@@ -149,7 +193,7 @@ class Agents:
             resume_coverletter = OptimizeResumeCoverletter.model_validate_json(response.text)
         except (errors.APIError, errors.ServerError, errors.ClientError) as e:   
             logging.error('%s',str(e.message))
-            return {"status":"error","message":str(e.message)}
+            return {"status":"error","message":str(e.message)[0:100]}
         else:
             return resume_coverletter
     
@@ -216,7 +260,7 @@ class Agents:
                         )
             except (errors.APIError, errors.ServerError,errors.ClientError) as e:   
                 logging.error('%s',str(e.message))
-                return {"status":"error","message":str(e.message)}
+                return {"status":"error","message":str(e.message)[0:100]}
         
             evaluation_result = response_critique.parsed
             if evaluation_result.evaluation == EvaluationStatus.PASS:
@@ -320,7 +364,7 @@ class Agents:
 
         except (errors.APIError, errors.ServerError, errors.ClientError) as e:   
             logging.error('%s',str(e.message))
-            return {"status":"error","message":str(e.message)}
+            return {"status":"error","message":str(e.message)[0:100]}
         
         return matching_score_details
         
@@ -353,7 +397,7 @@ class Agents:
                 2. Identify what changed and why
                 3. Highlight improvements made
                 4. Explain remaining gaps
-                5. Provide actionable recommendations
+                5. Provide actionable recommendations that the candidate would take to make the resume more align
 
                 Rules:
                 - Do NOT repeat entire resume
@@ -379,7 +423,7 @@ class Agents:
                 )
         except (errors.APIError, errors.ServerError, errors.ClientError) as e:   
             logging.error('%s',str(e.message))
-            return {"status":"error","message":str(e.message)}
+            return {"status":"error","message":str(e.message)[0:100]}
         return response.text
 
 
@@ -444,9 +488,14 @@ class Agents:
                 """
             resume_response =  self.client.models.generate_content(
                 model=self.model,
-                contents=prompt_resume
+                contents=prompt_resume,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_json_schema": UpdateResume.model_json_schema()
+                },
             )
-            final_response = {"resume":resume_response.text}
+            updated_resume = UpdateResume.model_validate_json(resume_response.text).model_dump()
+            final_response = {"type":"resume","resume":updated_resume.resume}
         elif response_router.parse.Category == Category.COVERLETTER:
              
             prompt_coverletter = f"""
@@ -479,9 +528,17 @@ class Agents:
                 """
             coverletter_response = self.client.models.generate_content(
                 model= self.model,
-                contents=prompt_coverletter
+                contents=prompt_coverletter,
+                config={
+                    "response_mime_type": "application/json",
+                    "response_json_schema": UpdateCoverletter.model_json_schema()
+                },
                 )
-            final_response = {"coverletter":coverletter_response.text}
+            
+            updated_coverletter = UpdateCoverletter.model_validate_json(resume_response.text).model_dump()
+            ## update memory with coverletter user intent
+            
+            final_response = {"type":"coverLetter","coverletter":updated_coverletter.coverletter}
 
         else:
             prompt_unknown = f"""
@@ -493,5 +550,5 @@ class Agents:
                 model=self.model,
                 contents=prompt_unknown
                 )
-            final_response = {"unknown":unknown_response}
+            final_response = {"type":"unknown","unknown":unknown_response}
         return final_response 
