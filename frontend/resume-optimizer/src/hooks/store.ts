@@ -26,13 +26,16 @@ export const useAuthStore = create<authState>()(
 
 
 interface ChatMessage {
-  human: string;
-  ai: string;
+  text: string;
+  role: "ai" | "user";
 }
 
 interface ChatStore {
   chats: ChatMessage[];
+  _hasHydrated: boolean;
+  setHasHydrated: (val: boolean) => void;
   addChat: (message: ChatMessage) => void;
+  initialChat: (message: ChatMessage) => void;
   clearChats: () => void;
 }
 
@@ -40,19 +43,42 @@ export const useChatResponse = create<ChatStore>()(
   persist(
     (set) => ({
       chats: [],
+      _hasHydrated: false,
 
+      setHasHydrated: (val) => set({ _hasHydrated: val }),
       addChat: (message) =>
-        set((state) => ({
-          chats: [...state.chats, message],
-        })),
+        set((state) => {
+          const last = state.chats[state.chats.length - 1];
+          if (last?.text === message.text && last?.role === message.role) {
+            return state; // same reference = no re-render
+          }
+          return { chats: [...state.chats, message] };
+        }),
+
+      initialChat: (message) =>
+        set((state) => {
+          if (
+            state.chats.length === 1 &&
+            state.chats[0].text === message.text &&
+            state.chats[0].role === message.role
+          ) {
+            return state;
+          }
+          return { chats: [message] };
+        }),
 
       clearChats: () =>
-        set(() => ({
-          chats: [],
-        })),
+        set((state) => {
+          if (state.chats.length === 0) return state;
+          return { chats: [] };
+        }),
     }),
     {
       name: "chat-response",
+      partialize: (state) => ({ chats: state.chats }), 
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true); 
+      },
     }
   )
 );

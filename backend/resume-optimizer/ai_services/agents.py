@@ -117,13 +117,21 @@ class Agents:
                     8. Strictly avoid adding any details to the optimize resume not included on the job description
 
                     RESUME DESIGN FORMAT RULES:
-                    - Candidate name must be on the first line in uppercase
+                    <header>
+                    - Candidate name must be on the first line in uppercase and center of the document
                     - Job title on the second line
-                    - Contact details on separate lines or grouped with "|"
-                    - Include Phone, Email, LinkedIn, and Portfolio (if available)
-                    - Use a standard single-column layout (no tables, no columns, no graphics).
-                    - Use clear section headings: Summary, Skills, Experience, Projects, Education, Certifications (if available).
-                    - Each section heading must:
+                    - Contact details on separate lines and well formatted line by line
+                      EXAMPLE:
+                       - Phone:
+                       - Email:
+                       - LinkedIn:(if available)
+                       - Portfolio: (if available)
+                       - Github: (if available)
+                    - all inside the header section
+                    </header>
+                    - Use a standard single-column layout
+                    - Use clear section header: Summary, Skills, Experience, Projects, Education, Certifications (if available).
+                    - Each section header should be h1:
                         - Be in UPPERCASE
                         - Be bold
                         - End with a colon (e.g., **EXPERIENCE:**, **SKILLS:**)
@@ -134,25 +142,26 @@ class Agents:
                     
 
                     EXPERIENCE SECTION RULES:
-                    - Format:
                     Job Title | Company Name | Location | Date
-                    - Include 3–5 bullet points per role
                     - Focus on achievements, not responsibilities
-                    - Highlight technologies used (e.g., Python, FastAPI, AWS, Snowflake)
-
                     BULLET POINT RULES:
-                    - All responsibilities and achievements must be written as bullet points
-                    - Use a simple dot bullet format (•)
-                    - Each bullet point must:
+                    - All responsibilities and achievements must be written as unordered list
                     - Start with a strong action verb
 
+                    EXPERIENCE EXAMPLE FORMAT:
+                    **Full Stack Python Developer | Zander Estimate (Remote) | March 2025 – August 2025
+                    - role responsibilities should be written as bullet unordered list
+                    EXAMPLE
+                      • Implemented Google OCR to extract and interpret handwritten notes from inspection documents
+
+
                     SKILLS SECTION RULES:
-                    - Group skills into categories:
+                    - Group skills into categories of an unordered list:
                     - Programming Languages
                     - Frameworks & Tools
                     - Cloud & DevOps
                     - Databases
-                    - Avoid long paragraphs—use clean lists
+                    - Avoid long paragraphs—use clean lists 
                 
                     COVER LETTER GENERATION RULE:
                     - Write a concise and tailored cover letter
@@ -164,7 +173,6 @@ class Agents:
                     - Use a standard business format:
                     - Greeting (e.g., "Dear Hiring Manager,")
                     - Opening paragraph
-                    - 1–2 body paragraphs
                     - Closing paragraph
                     - Professional sign-off (e.g., "Sincerely,")
 
@@ -449,18 +457,22 @@ class Agents:
 
                 Query: {user_query}
               """
-        response_router = self.client.models.generate_content(
-            model=self.model,
-            contents=prompt_router,
-            config={
-                'response_mime_type': 'application/json',
-                'response_schema': RoutingDecision,
-            },
-        )
+        try:
+            response_router = self.client.models.generate_content(
+                model=self.model,
+                contents=prompt_router,
+                config={
+                    'response_mime_type': 'application/json',
+                    'response_schema': RoutingDecision,
+                },
+            )
+        except (errors.APIError, errors.ServerError, errors.ClientError) as e: 
+                logging.error('%s',str(e.message))
+                return {"status":"error","message":str(e.message)[0:100]}
 
         final_response = ''
 
-        if response_router.parse.Category == Category.RESUME:
+        if response_router.parsed.category == Category.RESUME:
 
             prompt_resume = f"""
                  <role>
@@ -486,17 +498,30 @@ class Agents:
                 return a markdown format of the update resume
                 </output_format>
                 """
-            resume_response =  self.client.models.generate_content(
-                model=self.model,
-                contents=prompt_resume,
-                config={
-                    "response_mime_type": "application/json",
-                    "response_json_schema": UpdateResume.model_json_schema()
-                },
-            )
-            updated_resume = UpdateResume.model_validate_json(resume_response.text).model_dump()
-            final_response = {"type":"resume","resume":updated_resume.resume}
-        elif response_router.parse.Category == Category.COVERLETTER:
+            try:
+                resume_response =  self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt_resume,
+                    config={
+                        "response_mime_type": "application/json",
+                        "response_json_schema": UpdateResume.model_json_schema()
+                    },
+                )
+                updated_resume = UpdateResume.model_validate_json(resume_response.text).model_dump()
+            except (errors.APIError, errors.ServerError, errors.ClientError) as e: 
+                logging.error('%s',str(e.message))
+                return {"status":"error","message":str(e.message)[0:100]}
+            
+           
+            new_score = await self.agent_scoring(updated_resume,job_description)
+            new_insight = await self.insight_agent(updated_resume,updated_resume,job_description,new_score)
+
+            final_response = {"type":"resume",
+                              "resume":updated_resume.get('resume'),
+                               "ats_score":new_score,
+                                "insight_summary": new_insight,
+                                "agent_summary":updated_resume.get('summary')}
+        elif response_router.parsed.category == Category.COVERLETTER:
              
             prompt_coverletter = f"""
                <role>
@@ -526,29 +551,35 @@ class Agents:
                 return a markdown format of the update coverletter
                 </output_format>
                 """
-            coverletter_response = self.client.models.generate_content(
-                model= self.model,
-                contents=prompt_coverletter,
-                config={
-                    "response_mime_type": "application/json",
-                    "response_json_schema": UpdateCoverletter.model_json_schema()
-                },
-                )
-            
-            updated_coverletter = UpdateCoverletter.model_validate_json(coverletter_response.text).model_dump()
+            try:
+                coverletter_response = self.client.models.generate_content(
+                    model= self.model,
+                    contents=prompt_coverletter,
+                    config={
+                        "response_mime_type": "application/json",
+                        "response_json_schema": UpdateCoverletter.model_json_schema()
+                    },
+                    )
+                updated_coverletter = UpdateCoverletter.model_validate_json(coverletter_response.text).model_dump()
+            except (errors.APIError, errors.ServerError, errors.ClientError) as e: 
+                logging.error('%s',str(e.message))
+                return {"status":"error","message":str(e.message)[0:100]}
             ## update memory with coverletter user intent
-
-            final_response = {"type":"coverLetter","coverletter":updated_coverletter.coverletter}
-
+            final_response = {"type":"coverLetter","coverletter":updated_coverletter.get("coverletter"), 
+            "agent_summary":updated_coverletter.get('summary')}
         else:
             prompt_unknown = f"""
                     The user query is: {prompt_router}, 
                     but could not be answered. Here is the reasoning: {response_router.parsed.reasoning}. 
                     Write a helpful response to the user for him to try again.
                     """
-            unknown_response = self.client.models.generate_content(
-                model=self.model,
-                contents=prompt_unknown
-                )
-            final_response = {"type":"unknown","unknown":unknown_response}
+            try:
+                unknown_response = self.client.models.generate_content(
+                    model=self.model,
+                    contents=prompt_unknown
+                    )
+            except (errors.APIError, errors.ServerError, errors.ClientError) as e: 
+                logging.error('%s',str(e.message))
+                return {"status":"error","message":str(e.message)[0:100]}
+            final_response = {"type":"unknown","unknown":unknown_response.text}
         return final_response 

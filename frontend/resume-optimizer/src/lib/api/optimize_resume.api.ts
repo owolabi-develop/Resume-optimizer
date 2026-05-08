@@ -47,20 +47,20 @@ interface ChatAgentProps {
 
 export async function chatAgent({coverLetter,optimized_resume,job_description,user_query,model_name,model_api_key}: ChatAgentProps){
             try{
-                const formdata = new FormData()
-                formdata.append("coverLetter",coverLetter)
-                formdata.append("optimized_resume",optimized_resume)
-                formdata.append("job_description",job_description)
-                formdata.append("user_query",user_query)
-                formdata.append("model_name", model_name)
-                formdata.append("model_api_key",model_api_key)
-
+                // const formdata = new FormData()
+                const docData = {
+                    coverLetter:coverLetter,
+                    optimized_resume: optimized_resume,
+                    job_description:job_description,
+                    user_query:user_query,
+                    model_name: model_name,
+                    model_api_key:model_api_key
+                }
                const response  = await fetch("http://127.0.0.1:8000/resume/chat/agent/",{
                     method:"POST",
-                    body:formdata,
-                    headers: {
-                    accept: "application/json",
-                    },})
+                    body:JSON.stringify(docData),
+                    headers: {'Content-Type': 'application/json'}
+                })
                 if(!response.ok){
                 const errorData = await response.json();
                 toast(errorData.detail)

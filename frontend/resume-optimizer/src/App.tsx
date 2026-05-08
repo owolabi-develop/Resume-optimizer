@@ -1,6 +1,6 @@
 import { useState,useRef } from "react";
 import { ToastContainer,toast} from 'react-toastify';
-import { useAuthStore } from "./hooks/store";
+import { useAuthStore,useChatResponse } from "./hooks/store";
 
 import HeaderSection from "./components/Header/HeaderSection";
 import { Upload, Brain, SendHorizontal} from "lucide-react";
@@ -32,9 +32,15 @@ export default function App() {
   
   const [insightSummary,SetInsightSummary] = useState('')
 
-  const [chat, setChat] = useState([
-    { role: "ai", text: "Ask me to improve your resume" },
-  ]);
+  const chats = useChatResponse((state)=> state.chats)
+
+   const initialChat = useChatResponse((state)=> state.initialChat)
+   const addChat = useChatResponse((state)=> state.addChat)
+
+
+    // set initial chat
+   initialChat({ role: "ai", text: "Ask me to improve your resume" })
+
   const [input, setInput] = useState("");
 
   
@@ -46,12 +52,10 @@ export default function App() {
   const resumeFileRef = useRef<HTMLInputElement | null>(null)
   // const [openTemplate,setOpenTemplate] = useState(false)
 
-  const handleFileClick = () => {
-  
-  }
-
   const SendHorizontalMessage =  async () => {
     if (!input) return;
+
+    addChat({ role: "user", text: input})
     const data = await chatAgent({
       coverLetter:coverLetterText,
       optimized_resume:resume,
@@ -61,16 +65,18 @@ export default function App() {
       model_name:model_name,
     })
     if(data){
-      if (data?.type ==="resume"){
-        setResume(data.resume)
-        setSAtscore(data.ats_score)
-        SetInsightSummary(data.insight_summary)
+      if (data.documents?.type ==="resume"){
+        setResume(data.documents?.resume)
+        setSAtscore(data.documents?.ats_score)
+        SetInsightSummary(data.documents?.insight_summary)
+        addChat({ role: "ai",text:data.documents?.agent_summary})
+        
       }
       if (data?.type === "coverLetter"){
        setCoverLetterText(data.coverLetter)
       }
        if (data?.type === "unknown"){
-       setCoverLetterText(data.coverLetter)
+        addChat({ role: "ai",text:data.documents?.unknown})
       }
      
       
@@ -97,9 +103,11 @@ export default function App() {
       setCoverLetterText(data.coverLetter)
       setSAtscore(data.ats_score)
       SetInsightSummary(data.insight_summary)
-
+      
       // take action like document, or chat with assistant
       setNotTakeAction(false)
+      setJd('')
+      SetResumeFile(null)
 
       
      }
@@ -202,13 +210,12 @@ export default function App() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
-              {chat.map((msg, i) => (
+              {chats.map((msg, i) => (
                 <div
-                  key={i}
-                  className={`text-sm p-2 rounded max-w-[80%] ${
+                  key={i} className={`text-sm p-2 rounded-lg max-w-[80%] ${
                     msg.role === "user"
-                      ? "bg-black text-white ml-auto"
-                      : "bg-gray-100"
+                      ? "bg-gray-200 ml-auto"
+                      : "bg-gray-400 text-white"
                   }`}
                 >
                   {msg.text}
@@ -224,7 +231,7 @@ export default function App() {
                 placeholder="Chat with your resume"
               />
               <Recorder/>
-              <button disabled={noTtakeAction}
+              <button 
                 onClick={SendHorizontalMessage}
                 className={`text-xs px-3 py-2 border rounded-xl text-white ${noTtakeAction ? "bg-gray-500 cursor-not-allowed": "bg-gray-400 hover:bg-gray-500 cursor-pointer"}`}
               >

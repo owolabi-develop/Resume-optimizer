@@ -8,7 +8,7 @@ from ai_services.agents import Agents
 from pprint import pprint
 import asyncio
 import logging
-
+from ai_services.structure_output import ChatAgent
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p',level=logging.DEBUG)
 
 app = FastAPI(title="Resume Optimizer",
@@ -33,19 +33,10 @@ app.add_middleware(
 
 
 
-class ResumeData(BaseModel):
-      model_name: str
-      model_api_key: str
-      job_description: str
+
      
 
-class ChatAgent(BaseModel):
-    coverLetter:str
-    optimized_resume: str
-    job_description:str
-    user_query: str
-    model_name: str
-    model_api_key: str
+
 
 @app.post("/resume/optimize/api/")
 async def optimize_resume(resume:UploadFile,
@@ -116,6 +107,17 @@ async def optimize_resume(resume:UploadFile,
 
 @app.post("/resume/chat/agent/")
 async def chat_agent(item:ChatAgent):
+    print("hello")
+    agent = Agents(api_key=item.model_api_key,
+    model=item.model_name,voice_model='') 
+
+    print(item.optimized_resume)
+
+    response =  await agent.agent_update_resume_or_coverletter(
+        item.optimized_resume,item.coverLetter,
+        item.job_description,item.user_query,
+    )
+    if agent.is_error(response):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,detail=response.get('message'))
     
-     
-    return {"documents":""}
+    return {"documents":response}

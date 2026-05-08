@@ -63,8 +63,23 @@ class MemoryLogs(BaseModel):
 
 class UpdateResume(BaseModel):
     resume:str
-    memorylogs: MemoryLogs
+    summary:str = Field(description="Short description of what changed and what you did on the resume")
 
 class UpdateCoverletter(BaseModel):
     coverletter:str
-    memorylogs: MemoryLogs
+    summary: str = Field(description="Short description of what changed and what you did on the coverletter")
+
+
+class ChatAgent(BaseModel):
+    coverLetter:str
+    optimized_resume: str
+    job_description:str
+    user_query: str
+    model_name: str
+    model_api_key: str
+
+
+class ResumeData(BaseModel):
+      model_name: str
+      model_api_key: str
+      job_description: str
