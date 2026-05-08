@@ -107,11 +107,8 @@ async def optimize_resume(resume:UploadFile,
 
 @app.post("/resume/chat/agent/")
 async def chat_agent(item:ChatAgent):
-    print("hello")
     agent = Agents(api_key=item.model_api_key,
     model=item.model_name,voice_model='') 
-
-    print(item.optimized_resume)
 
     response =  await agent.agent_update_resume_or_coverletter(
         item.optimized_resume,item.coverLetter,

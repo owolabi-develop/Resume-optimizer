@@ -46,39 +46,47 @@ export const useChatResponse = create<ChatStore>()(
       _hasHydrated: false,
 
       setHasHydrated: (val) => set({ _hasHydrated: val }),
+
       addChat: (message) =>
-        set((state) => {
-          const last = state.chats[state.chats.length - 1];
-          if (last?.text === message.text && last?.role === message.role) {
-            return state; // same reference = no re-render
-          }
-          return { chats: [...state.chats, message] };
-        }),
+        set((state) => ({
+          chats: [...state.chats, message],
+        })),
 
       initialChat: (message) =>
         set((state) => {
-          if (
-            state.chats.length === 1 &&
-            state.chats[0].text === message.text &&
-            state.chats[0].role === message.role
-          ) {
-            return state;
+          // only set if chats is empty (fresh session)
+          if (state.chats.length === 0) {
+            return { chats: [message] };
           }
-          return { chats: [message] };
+          return state;
         }),
 
-      clearChats: () =>
-        set((state) => {
-          if (state.chats.length === 0) return state;
-          return { chats: [] };
-        }),
+      clearChats: () => set({ chats: [] }),
     }),
     {
       name: "chat-response",
-      partialize: (state) => ({ chats: state.chats }), 
+      partialize: (state) => ({ chats: state.chats }),
       onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true); 
+        state?.setHasHydrated(true);
       },
     }
   )
 );
+
+
+
+interface JDState {
+    job_description: string;
+    setJD:(job_description: string) => void
+}
+
+
+export const useJDStore = create<JDState>()(
+     persist(
+        (set)=>({
+            job_description:'',
+            setJD: (job_description)=>set(()=>({job_description:job_description})),    
+        }),
+        {name:'JD-store'}
+     ),
+)

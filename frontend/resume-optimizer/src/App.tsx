@@ -1,6 +1,6 @@
-import { useState,useRef } from "react";
-import { ToastContainer,toast} from 'react-toastify';
-import { useAuthStore,useChatResponse } from "./hooks/store";
+import { useState,useRef,useEffect } from "react";
+import { ToastContainer} from 'react-toastify';
+import { useAuthStore,useChatResponse,useJDStore } from "./hooks/store";
 
 import HeaderSection from "./components/Header/HeaderSection";
 import { Upload, Brain, SendHorizontal} from "lucide-react";
@@ -9,6 +9,7 @@ import {AtsScore,SkillsAnalysis
 import { CoverLetter,ResumeContainer } from "./components/ResumeContainer";
 import {  Recorder } from "./components/Recorder/Recorder";
 import { optimizeResumeData,chatAgent } from "./lib/api/optimize_resume.api";
+import Loader from "./components/Loader";
 
 
 
@@ -19,6 +20,7 @@ export default function App() {
   const [resume, setResume] = useState('');
   const [coverLetterText, setCoverLetterText] = useState('');
   const [jD, setJd] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
 
   const initial_atsScore = {
@@ -32,39 +34,50 @@ export default function App() {
   
   const [insightSummary,SetInsightSummary] = useState('')
 
-  const chats = useChatResponse((state)=> state.chats)
-
-   const initialChat = useChatResponse((state)=> state.initialChat)
-   const addChat = useChatResponse((state)=> state.addChat)
-
-
-    // set initial chat
-   initialChat({ role: "ai", text: "Ask me to improve your resume" })
-
   const [input, setInput] = useState("");
-
-  
-  
-  
 
   const [resumeFile,SetResumeFile] = useState<File | null>()
 
   const resumeFileRef = useRef<HTMLInputElement | null>(null)
   // const [openTemplate,setOpenTemplate] = useState(false)
 
-  const SendHorizontalMessage =  async () => {
-    if (!input) return;
 
-    addChat({ role: "user", text: input})
+
+  const bottomRef = useRef<HTMLDivElement>(null); 
+
+  const chats = useChatResponse((state)=> state.chats)
+
+  const initialChat = useChatResponse((state)=> state.initialChat)
+  const addChat =  useChatResponse((state)=> state.addChat)
+  const setJD = useJDStore((state)=>state.setJD)
+   const job_description = useJDStore((state)=>state.job_description)
+   
+// set initial chat once
+useEffect(() => {
+  initialChat({ role: "ai", text: "Ask me to improve your resume" });
+}, []);
+
+useEffect(() => {
+  bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [chats]);
+
+  const SendHorizontalMessage =  async () => {
+    if (!input.trim()) return;
+    const userMessage = input.trim()
+    setInput("");
+    setIsLoading(true);
+    addChat({ role: "user", text: userMessage})
     const data = await chatAgent({
       coverLetter:coverLetterText,
       optimized_resume:resume,
-      job_description:jD,
+      job_description:job_description,
       user_query:input,
       model_api_key:model_api_key,
       model_name:model_name,
     })
+   
     if(data){
+       setIsLoading(false);
       if (data.documents?.type ==="resume"){
         setResume(data.documents?.resume)
         setSAtscore(data.documents?.ats_score)
@@ -79,9 +92,8 @@ export default function App() {
         addChat({ role: "ai",text:data.documents?.unknown})
       }
      
-      
-     
      }
+      setIsLoading(false);
   };
 
   const {model_api_key, model_name} = useAuthStore()
@@ -166,7 +178,7 @@ export default function App() {
               <textarea
                 className="border rounded-lg p-3 text-sm resize-none flex-1"
                 placeholder="Paste Job Description..." value={jD}
-                onChange={(e)=>{setJd(e.target.value)}}
+                onChange={(e)=>{setJd(e.target.value); setJD(e.target.value);}}
               />
 
               <button disabled={optimizing}
@@ -211,16 +223,13 @@ export default function App() {
 
             <div className="flex-1 overflow-y-auto p-3 space-y-2 custom-scrollbar">
               {chats.map((msg, i) => (
-                <div
-                  key={i} className={`text-sm p-2 rounded-lg max-w-[80%] ${
-                    msg.role === "user"
-                      ? "bg-gray-200 ml-auto"
-                      : "bg-gray-400 text-white"
-                  }`}
-                >
-                  {msg.text}
-                </div>
-              ))}
+                <div key={i} className={`text-sm p-2 rounded-lg max-w-[80%] ${
+                    msg.role === "user" ? "bg-gray-200 ml-auto": "bg-gray-400 text-white"}`}>
+                    {msg.text}
+                    </div>
+                    ))}
+                    {isLoading && <Loader />}
+                <div ref={bottomRef} /> 
             </div>
 
             <div className="p-2 flex gap-2 border-t">
@@ -231,7 +240,7 @@ export default function App() {
                 placeholder="Chat with your resume"
               />
               <Recorder/>
-              <button 
+              <button disabled={noTtakeAction}
                 onClick={SendHorizontalMessage}
                 className={`text-xs px-3 py-2 border rounded-xl text-white ${noTtakeAction ? "bg-gray-500 cursor-not-allowed": "bg-gray-400 hover:bg-gray-500 cursor-pointer"}`}
               >

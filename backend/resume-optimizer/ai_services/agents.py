@@ -103,7 +103,7 @@ class Agents:
                  </context>
 
                  <instructions>
-                  Follow these strict resume design rules:
+                  Strictly follow all the resume design format rules:
 
                     RESUME OPTIMIZATION RULE:
                     1. Align the candidate’s title with the job title where appropriate
@@ -148,13 +148,10 @@ class Agents:
                     - All responsibilities and achievements must be written as unordered list
                     - Start with a strong action verb
 
-                    EXPERIENCE EXAMPLE FORMAT:
-                    **Full Stack Python Developer | Zander Estimate (Remote) | March 2025 – August 2025
-                    - role responsibilities should be written as bullet unordered list
-                    EXAMPLE
-                      • Implemented Google OCR to extract and interpret handwritten notes from inspection documents
-
-
+                    EXPERIENCE SECTION MARKDOWN FORMAT DESIGN RULE EXAMPLE:
+                    **Growth Associate | Company Pvt. Ltd. (P2P, O2C, AP/AR Systems)** | *Oct 2025 – Dec 2025*
+                    - Structured more than 50 enterprise dataset files containing vendor masters, customer registries, and product inventories through spreadsheet normalization, validation routines, 
+                        
                     SKILLS SECTION RULES:
                     - Group skills into categories of an unordered list:
                     - Programming Languages
@@ -301,7 +298,6 @@ class Agents:
         - Keyword
         - skills
         - experience
-        - format
         - impact
         """
         prompt = f"""
@@ -491,6 +487,72 @@ class Agents:
                  - update the candidate resume base on their request
                  - avoid making any changes on the resume which are not requested my the candidate
                  - keep the resume professional as is, aside from the candidate update request 
+
+                 Follow these strict resume design rules:
+
+                    RESUME OPTIMIZATION RULE:
+                    1. Align the candidate’s title with the job title where appropriate
+                    2. Based on the the job description rewrite the objective and professional summary to clearly match the role
+                    3. include job-specific keywords from the job description to ensure the resume matches the job requirements.
+                    4. Turn the candidate responsibilities into measurable achievement
+                    5. carefully refine the candidate most recent and relevant roles working experience, and cutout any ambiguous
+                    key achievement, task carried out not relating to their responsibilities that doesn't add any value. then 
+                    6. Strictly rewrite each role working experience of the candidate with bullet points that features the keywords and skill found on the job description.
+                    7. For each role craft a bullet point that tells a story of impact and result driven.
+                    8. Strictly avoid adding any details to the optimize resume not included on the job description
+
+                    RESUME DESIGN FORMAT RULES:
+                    <header>
+                    - Candidate name must be on the first line in uppercase and center of the document
+                    - Job title on the second line
+                    - Contact details on separate lines and well formatted line by line
+                      EXAMPLE:
+                       - Phone:
+                       - Email:
+                       - LinkedIn:(if available)
+                       - Portfolio: (if available)
+                       - Github: (if available)
+                    - all inside the header section
+                    </header>
+                    - Use a standard single-column layout
+                    - Use clear section header: Summary, Skills, Experience, Projects, Education, Certifications (if available).
+                    - Each section header should be h1:
+                        - Be in UPPERCASE
+                        - Be bold
+                        - End with a colon (e.g., **EXPERIENCE:**, **SKILLS:**)
+                    - Use simple formatting with proper spacing and consistent structure.
+                    - Avoid special characters, icons, emojis, or complex formatting.
+                    - add horizontal line where appropriate
+    
+                    
+
+                    EXPERIENCE SECTION RULES:
+                    Job Title | Company Name | Location | Date
+                    - Focus on achievements, not responsibilities
+                    BULLET POINT RULES:
+                    - All responsibilities and achievements must be written as unordered list
+                    - Start with a strong action verb
+
+                    EXPERIENCE EXAMPLE FORMAT:
+                    **Full Stack Python Developer | Zander Estimate (Remote) | March 2025 – August 2025
+                    - role responsibilities should be written as bullet unordered list
+                    EXAMPLE
+                      • Implemented Google OCR to extract and interpret handwritten notes from inspection documents
+
+
+                    SKILLS SECTION RULES:
+                    - Group skills into categories of an unordered list:
+                    - Programming Languages
+                    - Frameworks & Tools
+                    - Cloud & DevOps
+                    - Databases
+                    - Avoid long paragraphs—use clean lists 
+                
+                    COVER LETTER GENERATION RULE:
+                    - Write a concise and tailored cover letter
+                    - Clearly connect candidate experience to job requirements
+                    - Show alignment with company goals
+                    - Keep it professional and direct
                  
                 </instructions>
 
@@ -541,10 +603,18 @@ class Agents:
                 1. update the candidate coverletter base on the user request
 
                 COVER LETTER REGENERATION:
+                   COVER LETTER GENERATION RULE:
                     - Write a concise and tailored cover letter
                     - Clearly connect candidate experience to job requirements
                     - Show alignment with company goals
                     - Keep it professional and direct
+
+                    COVERLETTER STRUCTURE:
+                    - Use a standard business format:
+                    - Greeting (e.g., "Dear Hiring Manager,")
+                    - Opening paragraph
+                    - Closing paragraph
+                    - Professional sign-off (e.g., "Sincerely,")
                 </instructions>
 
                 <output_format>
