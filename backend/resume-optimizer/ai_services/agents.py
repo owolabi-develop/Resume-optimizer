@@ -4,8 +4,8 @@ import os
 import json
 from google import genai
 from google.genai import errors
-import enum
 import logging
+import asyncio
 from dotenv import load_dotenv
 from .structure_output import (ValidationStatus,OptimizeResumeCoverletter,OptimizeResumeEvaluation,
                                EvaluationStatus,ATSScore,RoutingDecision,Category,UpdateCoverletter,UpdateResume)
@@ -574,15 +574,18 @@ class Agents:
                 logging.error('%s',str(e.message))
                 return {"status":"error","message":str(e.message)[0:100]}
             
-           
-            new_score = await self.agent_scoring(updated_resume,job_description)
-            new_insight = await self.insight_agent(updated_resume,updated_resume,job_description,new_score)
+            
+            
+            async with asyncio.TaskGroup() as tg:
+                 new_score = tg.create_task(self.agent_scoring(updated_resume,job_description))
+                 new_insight = tg.create_task(self.insight_agent(updated_resume,updated_resume,job_description,new_score))
 
             final_response = {"type":"resume",
                               "resume":updated_resume.get('resume'),
-                               "ats_score":new_score,
-                                "insight_summary": new_insight,
+                               "ats_score":new_score.result(),
+                                "insight_summary": new_insight.result(),
                                 "agent_summary":updated_resume.get('summary')}
+            
         elif response_router.parsed.category == Category.COVERLETTER:
              
             prompt_coverletter = f"""
@@ -635,13 +638,26 @@ class Agents:
                 logging.error('%s',str(e.message))
                 return {"status":"error","message":str(e.message)[0:100]}
             ## update memory with coverletter user intent
-            final_response = {"type":"coverLetter","coverletter":updated_coverletter.get("coverletter"), 
+            final_response = {"type":"coverLetter","coverLetter":updated_coverletter.get("coverletter"), 
             "agent_summary":updated_coverletter.get('summary')}
         else:
             prompt_unknown = f"""
-                    The user query is: {prompt_router}, 
-                    but could not be answered. Here is the reasoning: {response_router.parsed.reasoning}. 
-                    Write a helpful response to the user for him to try again.
+                    <role>
+                    you are a professional response assistant base on the user query
+                    </role>
+                  
+
+                    <context>
+                      The user query is: {prompt_router}
+                      Here is the reasoning: {response_router.parsed.reasoning}. 
+                      why the candidate query couldn't be answered 
+                    </context>
+
+                    <instruction>
+                     1. base on the reasoning why the candidate intent could'nt be answered, write a professional response 
+                     to the candidate why their request couldn't be answer. Or response to them in a professional manner
+                    </instruction>
+
                     """
             try:
                 unknown_response = self.client.models.generate_content(

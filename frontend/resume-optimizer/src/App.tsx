@@ -85,10 +85,11 @@ useEffect(() => {
         addChat({ role: "ai",text:data.documents?.agent_summary})
         
       }
-      if (data?.type === "coverLetter"){
-       setCoverLetterText(data.coverLetter)
+      if (data.documents?.type === "coverLetter"){
+       setCoverLetterText(data.documents?.coverLetter)
+       addChat({ role: "ai",text:data.documents?.agent_summary})
       }
-       if (data?.type === "unknown"){
+       if (data?.documents?.type === "unknown"){
         addChat({ role: "ai",text:data.documents?.unknown})
       }
      
