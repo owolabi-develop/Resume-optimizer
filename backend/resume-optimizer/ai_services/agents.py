@@ -103,8 +103,6 @@ class Agents:
                  </context>
 
                  <instructions>
-                  Strictly follow all the resume design format rules:
-
                     RESUME OPTIMIZATION RULE:
                     1. Align the candidate’s title with the job title where appropriate
                     2. Based on the the job description rewrite the objective and professional summary to clearly match the role
@@ -120,13 +118,12 @@ class Agents:
                     <header>
                     - Candidate name must be on the first line in uppercase and center of the document
                     - Job title on the second line
-                    - Contact details on separate lines and well formatted line by line
-                      EXAMPLE:
-                       - Phone:
-                       - Email:
-                       - LinkedIn:(if available)
-                       - Portfolio: (if available)
-                       - Github: (if available)
+                    - Phone third line (if available)
+                    - Email forth line (if available)
+                    - LinkedIn fifth line (if available)
+                    - Portfolio sixth line (if available)
+                    - Github seventh line (if available)
+                    
                     - all inside the header section
                     </header>
                     - Use a standard single-column layout
@@ -145,12 +142,12 @@ class Agents:
                     Job Title | Company Name | Location | Date
                     - Focus on achievements, not responsibilities
                     BULLET POINT RULES:
-                    - All responsibilities and achievements must be written as unordered list
+                    - All responsibilities and achievements must be written as markdown unordered list
                     - Start with a strong action verb
 
                     EXPERIENCE SECTION MARKDOWN FORMAT DESIGN RULE EXAMPLE:
                     **Growth Associate | Company Pvt. Ltd. (P2P, O2C, AP/AR Systems)** | *Oct 2025 – Dec 2025*
-                    - Structured more than 50 enterprise dataset files containing vendor masters, customer registries, and product inventories through spreadsheet normalization, validation routines, 
+                    * Structured more than 50 enterprise dataset files containing vendor masters, customer registries, and product inventories through spreadsheet normalization, validation routines, 
                         
                     SKILLS SECTION RULES:
                     - Group skills into categories of an unordered list:
@@ -185,7 +182,8 @@ class Agents:
                  <output_format>
                   return a clean markdown format for both optimized resume and the coverletter 
                 </output_format>
-
+                
+                 Strictly follow all the resume and coverletter design format rules:
                  """
         try:
             response = self.client.models.generate_content(
@@ -506,12 +504,12 @@ class Agents:
                     - Candidate name must be on the first line in uppercase and center of the document
                     - Job title on the second line
                     - Contact details on separate lines and well formatted line by line
-                      EXAMPLE:
-                       - Phone:
-                       - Email:
-                       - LinkedIn:(if available)
-                       - Portfolio: (if available)
-                       - Github: (if available)
+                    - Job title on the second line
+                    - Phone third line (if available)
+                    - Email forth line (if available)
+                    - LinkedIn fifth line (if available)
+                    - Portfolio sixth line (if available)
+                    - Github seventh line (if available)
                     - all inside the header section
                     </header>
                     - Use a standard single-column layout
@@ -530,16 +528,13 @@ class Agents:
                     Job Title | Company Name | Location | Date
                     - Focus on achievements, not responsibilities
                     BULLET POINT RULES:
-                    - All responsibilities and achievements must be written as unordered list
+                    - All responsibilities and achievements must be written as markdown unordered list
                     - Start with a strong action verb
 
                     EXPERIENCE EXAMPLE FORMAT:
                     **Full Stack Python Developer | Zander Estimate (Remote) | March 2025 – August 2025
-                    - role responsibilities should be written as bullet unordered list
-                    EXAMPLE
-                      • Implemented Google OCR to extract and interpret handwritten notes from inspection documents
-
-
+                    * Implemented Google OCR to extract and interpret handwritten notes from inspection documents
+                
                     SKILLS SECTION RULES:
                     - Group skills into categories of an unordered list:
                     - Programming Languages
@@ -559,6 +554,8 @@ class Agents:
                 <output_format>
                 return a markdown format of the update resume
                 </output_format>
+                
+                 Strictly follow all the resume design format rules:
                 """
             try:
                 resume_response =  self.client.models.generate_content(
@@ -623,6 +620,8 @@ class Agents:
                 <output_format>
                 return a markdown format of the update coverletter
                 </output_format>
+                
+                 Strictly follow all the coverletter design format rules:
                 """
             try:
                 coverletter_response = self.client.models.generate_content(
