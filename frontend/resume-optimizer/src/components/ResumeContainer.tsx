@@ -62,7 +62,7 @@ export const ResumeContainer: React.FC<ResumeContainerProps> = ({ resume, takeAc
   return (
     <>
       <TemplateContainer isOpen={openTemplate} />
-      <div className="flex-1 bg-white rounded-lg border border-gray-50 shadow-xl flex flex-col overflow-hidden relative">
+      <div className="flex-1 bg-white rounded-lg border border-gray-50 shadow-xl flex flex-col overflow-hidden relative max-w-4xl">
         <div className="flex justify-end gap-2 p-1 border-b bg-gray-50">
           <button
             disabled={takeAction || !resume}
@@ -81,7 +81,7 @@ export const ResumeContainer: React.FC<ResumeContainerProps> = ({ resume, takeAc
         <div className="flex flex-1 overflow-hidden">
           <div
             ref={resumeRef}
-            className="w-full p-6 overflow-y-auto prose prose-sm custom-scrollbar"
+            className="w-20 p-6 overflow-y-auto prose prose-sm custom-scrollbar"
           >
             <ReactMarkdown>{resume}</ReactMarkdown>
           </div>
