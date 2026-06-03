@@ -81,7 +81,7 @@ export const ResumeContainer: React.FC<ResumeContainerProps> = ({ resume, takeAc
         <div className="flex flex-1 overflow-hidden">
           <div
             ref={resumeRef}
-            className="w-20 p-6 overflow-y-auto prose prose-sm custom-scrollbar"
+            className="max-w-4xl p-6 overflow-y-auto prose prose-sm custom-scrollbar"
           >
             <ReactMarkdown>{resume}</ReactMarkdown>
           </div>
